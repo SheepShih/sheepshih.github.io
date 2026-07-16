@@ -1,0 +1,458 @@
+/* ---------- About — Ichigo Max News(レトロ新聞) ---------- */
+/* Figmaの402px幅アートボードを1:1座標で組み、JSで画面幅にスケールする */
+
+:root {
+  --paper: #F5E9CA;
+  --ink: #000;
+  --paper-dark: #E5D8B8;
+  --diner-bg: #DF9079; /* topページと共通の背景色 */
+  --font-head: "Anton", "Arial Narrow", sans-serif;
+  --font-jp: "Noto Sans JP", "Hiragino Kaku Gothic ProN", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--diner-bg);
+  font-family: var(--font-jp);
+}
+
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* topページのドア画像と同じサイズ・位置の枠。中で新聞がスクロールする */
+.paper-frame {
+  background: var(--paper);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none; /* Firefox */
+  animation: paper-spin-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.paper-frame::-webkit-scrollbar { display: none; }
+
+/* ページ切替エフェクト: 新聞がくるっと回転しながら現れる */
+@keyframes paper-spin-in {
+  from { transform: rotate(-540deg) scale(0.05); opacity: 0; }
+  to   { transform: rotate(0deg) scale(1); opacity: 1; }
+}
+
+/* topへ戻るとき: 縮小フェード(入場アニメーションを解除してから適用) */
+.paper-frame.leaving {
+  animation: none;
+  transition: transform 0.3s ease-in, opacity 0.3s ease-in;
+  transform: scale(0.85);
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .paper-frame { animation: none; }
+}
+
+/* ---------- スクロール連動の出現エフェクト ---------- */
+.reveal {
+  opacity: 0;
+  translate: 0 24px;
+  transition: opacity 0.6s ease, translate 0.6s ease;
+}
+.reveal.shown { opacity: 1; translate: 0 0; }
+
+/* タイムラインのテキスト・カメラ・FAQは「スライドなしのフェードのみ」。
+   カメラとテキストは別要素で reveal が個別に発火するため、上下スライドを
+   付けると出現中に相対的にズレて見える。位置は固定でフェードだけさせる */
+.tl-entry.reveal,
+.tl-camera.reveal,
+.tl-faq.reveal,
+.tl-faq-sticker.reveal {
+  translate: 0 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; translate: 0 0; transition: none; }
+}
+
+/* ---------- 写真の現像エフェクト ---------- */
+/* 未現像状態: transitionを付けず、クラス付与時に即座に真っ白へスナップ */
+.develop {
+  opacity: 0;
+  filter: brightness(1.9) contrast(0.35) sepia(0.5) blur(4px);
+}
+/* .developed 付与時にだけアニメ(写真は2秒) */
+.develop.developed {
+  opacity: 1;
+  filter: brightness(1) contrast(1) sepia(0) blur(0);
+  transition: opacity 2s ease, filter 2s ease;
+}
+/* ポスターは表示されたら即座に現像を始める(3秒・遅延なし) */
+.poster.develop.developed {
+  transition: opacity 3s ease, filter 3s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .develop { opacity: 1; filter: none; transition: none; }
+}
+
+.paper-wrap {
+  position: relative;
+  overflow: hidden;
+  background: var(--paper);
+}
+
+/* 402×3860の固定キャンバス(transformでスケール) */
+.paper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 402px;
+  height: 4001px;
+  background: var(--paper);
+  transform-origin: top left;
+}
+
+.paper p { margin: 0; }
+
+/* ---------- ナビゲーション ---------- */
+.back-top-btn {
+  position: absolute;
+  left: 50%;
+  top: 3946px;
+  transform: translateX(-50%);
+  z-index: 1; /* 人イラストの脚を上に重ねるため、ボタンは下の層に */
+  background: var(--ink);
+  color: var(--paper);
+  font-family: "Bentham", serif;
+  font-size: 24px;
+  line-height: 1;
+  padding: 4px 8px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* PC幅の装飾(.pc-deco / .deco-*)は共通の pc-deco.css で定義 */
+
+/* ---------- マストヘッド ---------- */
+/* 「Be quiet!」は黒帯の外・上に黒文字、黒帯には題字のみ */
+.masthead {
+  position: absolute;
+  left: 56px;
+  top: 16px;
+  width: 338px;
+  height: 72px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+}
+
+.masthead-sub {
+  font-family: var(--font-head);
+  font-size: 16px;
+  line-height: 1;
+  color: var(--ink);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.masthead-bar {
+  flex: 1;
+  width: 100%;
+  background: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.masthead-title {
+  font-family: var(--font-head);
+  font-size: 43px;
+  line-height: 1;
+  color: var(--paper);
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* CMボックス(縦の広告枠) */
+.cm-box {
+  position: absolute;
+  left: 8px;
+  top: 16px;
+  width: 40px;
+  height: 72px;
+  border: 1px solid var(--ink);
+}
+.cm-box img { position: absolute; }
+.cm-heres { left: 4px;    top: 9px;  width: 31px; height: 7.6px; }
+.cm-pr    { left: 4.5px;  top: 22px; width: 31px; height: 28.6px; }
+.cm-phone { left: 4px;    top: 62px; width: 31px; height: 5.1px; }
+
+/* メタ情報 */
+.meta-row {
+  position: absolute;
+  left: 8px;
+  top: 104px;
+  width: 386px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.meta-row p {
+  font-family: var(--font-head);
+  font-size: 10px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* ---------- 罫線 ---------- */
+.rule {
+  position: absolute;
+  left: 8px;
+  width: 386px;
+  border-top: 2px solid var(--ink);
+}
+.rule-1 { top: 118px; }
+.rule-3 { top: 2486px; }
+
+/* ---------- ポスター ---------- */
+.poster {
+  position: absolute;
+  left: 8px;
+  top: 144px;
+  width: 386px;
+  height: 520px;
+  object-fit: cover;
+}
+
+.caption-search {
+  position: absolute;
+  right: 8px;
+  top: 668px;
+  font-size: 10px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+/* ---------- Who is She? ---------- */
+.headline-who {
+  position: absolute;
+  left: 144px;
+  top: 746px;
+  margin: 0;
+  font-family: var(--font-head);
+  font-weight: 400;
+  font-size: 51px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.article-photos {
+  position: absolute;
+  left: 8px;
+  top: 738px;
+  width: 128px;
+  height: 370px;
+  overflow: hidden;
+}
+/* 書き出し時点でフレームにクリップ済みの画像(反転も焼き込み) */
+.photo-03 {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 128px;
+  height: 198px;
+  object-fit: cover;
+  z-index: 1; /* 重なり部分は上の写真が前面 */
+}
+.photo-05 {
+  position: absolute;
+  left: 0;
+  top: 190px;
+  width: 128px;
+  height: 180px;
+  object-fit: cover;
+}
+
+/* ---------- 記事本文 ---------- */
+/* 字詰めはTBNPゴシック(デザイン指定フォント)の行数に合わせた調整値 */
+.article {
+  position: absolute;
+  width: 250px;
+  font-size: 13px;
+  line-height: 1.6;
+  letter-spacing: -0.15px;
+}
+.article-1 { left: 144px; top: 800px; }
+.article-2 { left: 8px;   top: 1144px; }
+
+.article p + p { margin-top: 0; }
+.article .article-lead + p { margin-top: 0; }
+.article p + .article-lead { margin-top: 1.6em; }
+.article p.spaced { margin-top: 1.6em; }
+.article-lead { font-weight: 900; }
+
+/* ---------- SNSリンク ---------- */
+.sns-box {
+  position: absolute;
+  left: 266px;
+  top: 1144px;
+  width: 128px;
+  height: 416px;
+  background: var(--paper-dark);
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.sns-item { display: flex; flex-direction: column; gap: 8px; }
+.sns-item a {
+  font-family: var(--font-head);
+  font-size: 13px;
+  line-height: 1;
+  color: var(--ink);
+  text-decoration: underline;
+}
+.sns-item p { font-size: 9px; line-height: 1; white-space: nowrap; }
+.sns-code {
+  font-family: var(--font-head);
+  font-size: 13px;
+  line-height: 1;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+/* ---------- PR 写真コラージュ(合成1枚) ---------- */
+.pr-collage {
+  position: absolute;
+  left: 8px;
+  top: 1640px;
+  width: 386px;
+  height: 706px;
+  object-fit: cover;
+  mix-blend-mode: luminosity;
+}
+/* 記事に重なる傾いた写真(5度回転・luminosity) */
+.col-tilt {
+  position: absolute;
+  left: 280px; top: 1480px; width: 163px; height: 118px;
+  object-fit: cover;
+  transform: rotate(5deg);
+  mix-blend-mode: luminosity;
+}
+
+/* 右端の立ち人物(コラージュ〜タイムライン境目) */
+.figure-point {
+  position: absolute;
+  right: 0;
+  top: 2295px;
+  width: 103px;
+  height: 194px;
+  z-index: 2; /* Life timelineのタイトル下の線の上(前面)に脚を重ねる */
+}
+
+/* ---------- Life timeline ---------- */
+.headline-timeline {
+  position: absolute;
+  left: 8px;
+  top: 2426px;
+  margin: 0;
+  font-family: var(--font-head);
+  font-weight: 400;
+  font-size: 60px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.tl-line {
+  position: absolute;
+  left: 198px; /* 線の中心をx=200に合わせる */
+  width: 0;
+  border-left: 4px solid var(--ink);
+}
+
+.tl-year {
+  position: absolute;
+  left: 182px;
+  font-family: var(--font-head);
+  font-size: 20px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.tl-entry {
+  position: absolute;
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+/* 中央線の右側に置くエントリ */
+.tl-left-align { left: 222px; }
+
+/* 中央線の左側に置くエントリ(左端をデザイン座標に固定・行は右揃え) */
+.tl-right-align { text-align: right; }
+
+.tl-camera {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+}
+
+.figure-timeline {
+  position: absolute;
+  left: 155px;
+  top: 3733px;
+  width: 107px;
+  height: 225px;
+  z-index: 2; /* 脚を「Back to the top」ボタンの上に重ねる */
+  pointer-events: none; /* 装飾なのでボタンのクリックを妨げない */
+}
+
+/* タイムラインの装飾写真(背景・セピア調)
+   透明度はJSがスクロール位置に応じて制御する(上へ抜けると消える) */
+.tl-deco {
+  position: absolute;
+  object-fit: cover;
+  mix-blend-mode: luminosity;
+  opacity: 0;
+}
+
+/* FAQ(結婚しました の下の小さな注釈) — 右端をX182に揃える */
+/* FAQ(結婚しました の下のベージュ吹き出しボックス) */
+.tl-faq {
+  position: absolute;
+  background: var(--paper-dark);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 8px;
+  line-height: 1.4;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.tl-faq p { margin: 0; }
+
+/* FAQ横の小さなステッカー */
+.tl-faq-sticker {
+  position: absolute;
+  width: 30px;
+  height: 27px;
+}
+
+/* LINEヤフーのステッカー(11.63度回転で貼られた風) */
+.line-sticker {
+  position: absolute;
+  left: 202px;
+  top: 3627px;
+  width: 186px;
+  height: 86px;
+}

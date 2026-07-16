@@ -1,0 +1,254 @@
+/* ---------- Shih Ting Fang Diner — レトロダイナー・スマホ特化 ---------- */
+
+:root {
+  --film-black: #DF9079;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--film-black);
+  font-family: "Poppins", "Hiragino Kaku Gothic ProN", sans-serif;
+}
+
+body { display: flex; justify-content: center; }
+
+/* ページ切替エフェクト: 遷移前にフェードアウト */
+body {
+  transition: opacity 0.35s ease;
+}
+
+body.page-leave { opacity: 0; }
+
+.phone-frame {
+  width: 100%;
+  max-width: 430px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: var(--film-black);
+  position: relative;
+}
+
+/* ---------- ページ切替エフェクト(Aboutへ遷移時) ---------- */
+.phone-frame,
+.pc-deco {
+  transition: opacity 0.35s ease;
+}
+
+body.page-leave .phone-frame,
+body.page-leave .pc-deco {
+  opacity: 0;
+}
+
+/* ---------- ドア開閉スクロールステージ ---------- */
+.door-stage {
+  height: 350vh; /* スクロール量 = アニメーションの尺 */
+  height: 350dvh;
+  position: relative;
+}
+
+.door-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background-color: var(--film-black);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* ドア画像を画面の縦中央に置くためのラッパー(scrollテキストは高さに含めない) */
+.door-center {
+  flex-shrink: 0;
+  width: 100%;
+  position: relative;
+}
+
+.door-viewport {
+  width: 100%;
+  aspect-ratio: 768 / 1376;
+  position: relative;
+  overflow: hidden;
+}
+
+.door-frames {
+  position: absolute;
+  inset: 0;
+}
+
+.door-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+}
+
+.door-frame.active { opacity: 1; }
+
+.door-frame:last-child { transition: opacity 0.9s ease; }
+
+/* ---------- ハンバーガーメニュー(interior表示時のみ) ---------- */
+.hamburger-menu {
+  position: absolute;
+  left: 50%;
+  top: 55.7%;
+  width: 28%;
+  transform: translate(-50%, -450%);
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 15;
+}
+
+.hamburger-menu .burger-img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.hamburger-menu .burger-open { display: none; }
+
+.door-stage.menu-open .burger-closed { display: none; }
+.door-stage.menu-open .burger-open   { display: block; }
+
+.door-stage.door-open .hamburger-menu {
+  opacity: 1;
+  pointer-events: auto;
+  animation: burger-drop 0.9s 0.4s both;
+}
+
+/* 上からカウンターに落下 → 軽くバウンド */
+@keyframes burger-drop {
+  0% {
+    transform: translate(-50%, -450%);
+    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); /* 落下は加速 */
+  }
+  60% {
+    transform: translate(-50%, 0);
+    animation-timing-function: ease-out;
+  }
+  75% {
+    transform: translate(-50%, -8%);
+    animation-timing-function: ease-in;
+  }
+  88% {
+    transform: translate(-50%, 0);
+    animation-timing-function: ease-out;
+  }
+  94% {
+    transform: translate(-50%, -2%);
+    animation-timing-function: ease-in;
+  }
+  100% {
+    transform: translate(-50%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .door-stage.door-open .hamburger-menu {
+    animation: none;
+    transform: translate(-50%, 0);
+    transition: opacity 0.9s ease;
+  }
+}
+
+/* ---------- メニューオーバーレイ ---------- */
+.menu-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  background: rgba(223, 144, 121, 0.25);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+.menu-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.menu-list {
+  position: absolute;
+  top: 34%; /* Figma: About top 245/720 */
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.menu-list a {
+  font-family: "Bentham", serif;
+  font-size: 32px;
+  line-height: 1;
+  color: #fff;
+  text-decoration: none;
+  text-shadow: 0 0 4px rgba(148, 43, 13, 0.5);
+  white-space: nowrap;
+}
+
+.menu-note {
+  font-size: 16px;
+}
+
+/* ---------- スクロール案内 ---------- */
+.scroll-hint {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding-top: 30px;
+  transition: opacity 0.4s ease;
+}
+
+.door-stage.is-scrolled .scroll-hint {
+  opacity: 0;
+}
+
+.scroll-text {
+  margin: 0;
+  font-family: "Bentham", serif;
+  font-weight: 400;
+  font-size: 24px;
+  line-height: 1;
+  color: #fff;
+  letter-spacing: 1px;
+  animation: scroll-hint-pulse 2s ease-in-out infinite;
+}
+
+@keyframes scroll-hint-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 0.35;
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-text { animation: none; }
+}
+
+/* PC幅の装飾(.pc-deco / .deco-*)は共通の pc-deco.css で定義 */

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Shih Ting Fang 施婷方 | Portfolio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bentham&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=11">
+<link rel="stylesheet" href="pc-deco.css?v=44">
+</head>
+<body>
+
+<div class="phone-frame">
+
+  <!-- ドア開閉スクロールアニメーション -->
+  <div class="door-stage" id="doorStage">
+    <div class="door-sticky">
+      <div class="door-center">
+        <div class="door-viewport">
+          <div class="door-frames" id="doorFrames">
+            <img class="door-frame active" data-i="0" src="assets/img/front01.webp" alt="お店のドア（閉）">
+            <img class="door-frame"        data-i="1" src="assets/img/front02.webp" alt="">
+            <img class="door-frame"        data-i="2" src="assets/img/front04.webp" alt="">
+            <img class="door-frame"        data-i="3" src="assets/img/front05.webp" alt="">
+            <img class="door-frame"        data-i="4" src="assets/img/front06.webp" alt="">
+            <img class="door-frame"        data-i="5" src="assets/img/front07.webp" alt="">
+            <img class="door-frame"        data-i="6" src="assets/img/front08.webp" alt="">
+            <img class="door-frame"        data-i="7" src="assets/img/front09.webp" alt="">
+            <img class="door-frame"        data-i="8" src="assets/img/front10.webp" alt="">
+            <img class="door-frame"        data-i="9" src="assets/img/interior.webp?v=2" alt="お店の中（ダイナー内観）">
+          </div>
+
+          <button class="hamburger-menu" id="hamburgerMenu" type="button" aria-label="メニューを開く" aria-expanded="false">
+            <img class="burger-img burger-closed" src="assets/img/hamburger-menu.webp" alt="">
+            <img class="burger-img burger-open"   src="assets/img/hamburger-menu-open.webp?v=2" alt="">
+          </button>
+
+          <nav class="menu-overlay" id="menuOverlay" aria-hidden="true">
+            <ul class="menu-list">
+              <li><a href="about.html">About</a></li>
+              <li><a href="https://sheepshih.studio.site/" target="_blank" rel="noopener">Works <span class="menu-note">(~2022)</span></a></li>
+              <li><a href="works.html">Works <span class="menu-note">(2022~)</span></a></li>
+            </ul>
+          </nav>
+        </div>
+
+        <div class="scroll-hint">
+          <p class="scroll-text">scroll</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- PC幅のみの装飾は pc-deco.js が注入する(index/about共通) -->
+<script src="pc-deco.js?v=25"></script>
+<script src="script.js?v=8"></script>
+</body>
+</html>

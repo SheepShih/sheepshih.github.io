@@ -1,0 +1,220 @@
+/* ============================================================
+   PC幅のみの装飾(index / about / works 共通)
+   座標はFigma(1440×1024アートボード)のドア中心を画面中心として換算。
+   各装飾はFigmaアートボード上の絶対座標(中心=画面中心)にそのまま配置する。
+   ※注意: コンテナに transform: scale(430/402) を掛けてはいけない。
+     拡大の分だけ各装飾が中心から外側へ約7%ずれて、星やサインが
+     Figmaの位置と合わなくなる(過去に2回この原因でズレが発生)。
+     ドア枠だけドア(430px)に合わせて実寸指定する。
+   ============================================================ */
+.pc-deco {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  /* ドア左右の装飾をまとめて外側へ広げる余白量(左は左へ/右は右へ)。
+     各装飾の left は calc(... ± var(--spread)) で参照する。0にすればFigma座標そのまま */
+  --spread: 30px;
+}
+.pc-deco img,
+.pc-deco .deco-border {
+  position: absolute;
+  pointer-events: none;
+}
+
+/* ドアを囲む白い枠線(ソフトライト)。実ドア430×770に12pxの余白 */
+.deco-border {
+  left: 50%;
+  top: 50%;
+  width: 454px;
+  height: 794px;
+  transform: translate(-50%, -50%);
+  border: 1px solid #fff;
+  mix-blend-mode: soft-light;
+}
+
+/* 右側の新聞コラージュポスター(最背面)。画像にサーモン色が焼き込み済み */
+.deco-poster-news {
+  left: calc(50% + 281px + var(--spread));
+  top: calc(50% - 400px);
+  width: 457px;
+  height: 579px;
+}
+
+/* 左のロッキー・ホラー・ショーのポスター */
+.deco-poster-rocky {
+  left: calc(50% - 733px - var(--spread));
+  top: calc(50% - 244px);
+  width: 354px;
+  height: 529px;
+}
+
+/* ミラーボール(右上・回転GIF) */
+.deco-disco {
+  left: calc(50% + 413px + var(--spread));
+  top: calc(50% - 719px);
+  width: 422px;
+  height: 629px;
+}
+
+/* 人物(右・新聞コラージュの上) */
+.deco-people {
+  left: calc(50% + 440px + var(--spread));
+  top: calc(50% - 235px);
+  width: 190px;
+  height: 253px;
+}
+
+/* HELLO! WHERE ARE YOU? BRAIN(2層焼き込み済みSVG) */
+.deco-hello {
+  left: calc(50% + 330px + var(--spread));
+  top: calc(50% - 199px);
+  width: 399px;
+  height: 132px;
+}
+
+/* WANTEDのTVスタック+黒電話(アニメーションGIF・右下) */
+.deco-tvphone {
+  left: calc(50% + 223px + var(--spread));
+  top: calc(50% + 56px);
+  width: 415px;
+  height: 446px;
+}
+
+/* テディベア(ドア左下) */
+.deco-teddy {
+  left: calc(50% - 331px - var(--spread));
+  top: calc(50% + 359px);
+  width: 118px;
+  height: 159px;
+}
+
+/* 星のきらめき */
+/* DINERサイン左上の合体スパークル */
+.deco-star1 { left: calc(50% - 457px - var(--spread)); top: calc(50% - 372px); width: 55px; height: 51px; }
+/* ミラーボール下の合体スパークル */
+.deco-star4 { left: calc(50% + 399px + var(--spread)); top: calc(50% - 426px); width: 72px; height: 60px; }
+/* ミラーボール左上の単体星 */
+.deco-star6 { left: calc(50% + 379px + var(--spread)); top: calc(50% - 491px); width: 39px; height: 39px; }
+/* DINERサイン下・ドア左脇の単体星 */
+.deco-star3 { left: calc(50% - 302px - var(--spread)); top: calc(50% - 21px);  width: 29px; height: 29px; }
+/* テディベア右上のスパークル */
+.deco-star-bear { left: calc(50% - 400px - var(--spread)); top: calc(50% + 293px); width: 72px; height: 60px; }
+
+/* レコードのジャケット(左下・レコードプレーヤーの後ろ) */
+.deco-cover {
+  left: calc(50% - 697px - var(--spread));
+  top: calc(50% + 219px);
+  width: 155px;
+  height: 188px;
+}
+
+/* DINER 縦型ネオンサイン(左) */
+.deco-sign {
+  left: calc(50% - 416px - var(--spread));
+  top: calc(50% - 289px);
+  width: 138px;
+  height: 361px;
+}
+
+/* DISCO FEVERポスター(右下・TVの上) */
+.deco-poster-disco {
+  left: calc(50% + 581px + var(--spread));
+  top: calc(50% + 123px);
+  width: 139px;
+  height: 164px;
+}
+
+/* レコードプレーヤー(左下・回転する盤のGIF) */
+.deco-record {
+  left: calc(50% - 592px - var(--spread));
+  top: calc(50% + 252px);
+  width: 249px;
+  height: 253px;
+}
+
+/* 新聞クリップ(上・サインの後ろ) */
+.deco-poster-clip {
+  left: calc(50% - 391px - var(--spread));
+  top: calc(50% - 544px);
+  width: 153px;
+  height: 166px;
+}
+
+/* 手書きサイン(上)。回転済みSVG・インク位置補正込み(フレーム163,10.72基準) */
+.deco-signature {
+  left: calc(50% - 556px - var(--spread));
+  top: calc(50% - 555px);
+  width: 560px;
+  height: 207px;
+}
+
+/* DON'T DREAM IT, BE IT. のネオンサイン(左上)。グローはデザインのコーラル色に補正済み */
+.deco-dream {
+  left: calc(50% - 741px - var(--spread));
+  top: calc(50% - 307px);
+  width: 260px;
+  height: 42px;
+}
+
+/* ヴィンテージカメラ+ストラップ(上・ドアの右上に吊るす)。Figmaノード162×191 */
+.deco-camera {
+  left: calc(50% + 188px + var(--spread));
+  top: calc(50% - 601px);
+  width: 162px;
+  height: 191px;
+}
+
+/* クラシックカー(ロッキーホラーポスターの右下) */
+.deco-car {
+  left: calc(50% - 465px - var(--spread));
+  top: calc(50% + 130px);
+  width: 199px;
+  height: 117px;
+}
+
+/* ---------- 登場演出(ページ読込時にコラージュが組み上がる) ---------- */
+/* 各パーツがバウンドしながらポップイン。遅延は pc-deco.js が個別に設定 */
+@keyframes deco-pop {
+  0%   { opacity: 0; transform: scale(0.62) translateY(26px); }
+  55%  { opacity: 1; transform: scale(1.14) translateY(-6px); }
+  72%  { transform: scale(0.95) translateY(2px); }
+  86%  { transform: scale(1.04) translateY(-1px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes deco-border-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.pc-deco img {
+  animation: deco-pop 0.72s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+/* 枠線は transform(translate)を持つのでフェードのみ */
+.deco-border {
+  animation: deco-border-in 0.7s ease both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pc-deco img,
+  .deco-border { animation: none; }
+}
+
+/* ---------- ドラッグ操作(登場演出の後に有効化) ---------- */
+/* コンテナは pointer-events:none のまま(隙間はクリック透過)、
+   各パーツだけ掴めるようにする */
+.pc-deco.interactive img {
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none; /* ドラッグ中にスクロールさせない */
+}
+.pc-deco.interactive img.dragging {
+  cursor: grabbing;
+}
+
+/* ページ切替時のフェード(両ページ共通) */
+.pc-deco { transition: opacity 0.35s ease; }
+body.page-leave .pc-deco { opacity: 0; }
+
+/* スマホ幅では非表示 */
+@media (max-width: 430px) {
+  .pc-deco { display: none; }
+}
