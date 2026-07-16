@@ -210,6 +210,28 @@
   cursor: grabbing;
 }
 
+/* ---------- カメラをタップして画面を撮る(PC幅のみ) ---------- */
+/* カメラだけは「押せる」ことが伝わるようポインターに */
+.pc-deco.interactive .deco-camera { cursor: pointer; }
+/* シャッターの白フラッシュ(撮影の一瞬だけ光る)。html2canvasには写さない */
+.cam-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #fff;
+  opacity: 0;
+  pointer-events: none;
+}
+.cam-flash.fire { animation: cam-flash 0.45s ease-out; }
+@keyframes cam-flash {
+  0%   { opacity: 0; }
+  8%   { opacity: 0.92; }
+  100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cam-flash.fire { animation: none; }
+}
+
 /* ページ切替時のフェード(両ページ共通) */
 .pc-deco { transition: opacity 0.35s ease; }
 body.page-leave .pc-deco { opacity: 0; }

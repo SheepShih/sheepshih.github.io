@@ -82,9 +82,12 @@
 
     function endDrag(e) {
       if (!active) return;
+      var el = active;
       active.classList.remove("dragging");
       try { active.releasePointerCapture(e.pointerId); } catch (err) {}
       active = null;
+      // 動かさずにカメラを離した=タップ → 画面を撮る
+      if (!moved && el.classList.contains("deco-camera")) { fireCamera(); }
     }
     deco.addEventListener("pointerup", endDrag);
     deco.addEventListener("pointercancel", endDrag);
@@ -103,5 +106,77 @@
     enableDrag();
   } else {
     setTimeout(enableDrag, introDelay * 1000 + 100);
+  }
+
+  // ---------- カメラをタップして画面をパシャッと撮る ----------
+  // html2canvasはタップ時に初めて読み込む(初期表示を軽く保つ)
+  function loadH2C(cb) {
+    if (window.html2canvas) { cb(); return; }
+    var s = document.createElement("script");
+    s.src = "assets/vendor/html2canvas.min.js";
+    s.onload = function () { cb(); };
+    s.onerror = function () { cb(new Error("html2canvas load failed")); };
+    document.head.appendChild(s);
+  }
+
+  var flashEl = null, capturing = false;
+  function ensureFlash() {
+    if (flashEl) return flashEl;
+    flashEl = document.createElement("div");
+    flashEl.className = "cam-flash";
+    flashEl.setAttribute("data-html2canvas-ignore", "true"); // 撮影画像には写さない
+    document.body.appendChild(flashEl);
+    return flashEl;
+  }
+
+  function stamp() {
+    var d = new Date(), p = function (n) { return (n < 10 ? "0" : "") + n; };
+    return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + "-" +
+           p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds());
+  }
+
+  function fireCamera() {
+    if (capturing) return;
+    capturing = true;
+
+    // シャッターの白フラッシュ
+    var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!reduce) {
+      var f = ensureFlash();
+      f.classList.remove("fire");
+      void f.offsetWidth; // リフローで再生をリセット
+      f.classList.add("fire");
+    }
+
+    // 画面を画像化してダウンロード
+    loadH2C(function (err) {
+      if (err || !window.html2canvas) { capturing = false; return; }
+      window.html2canvas(document.body, {
+        backgroundColor: null,
+        useCORS: true,
+        logging: false,
+        scale: Math.min(2, window.devicePixelRatio || 1),
+        x: window.scrollX,
+        y: window.scrollY,
+        width: window.innerWidth,
+        height: window.innerHeight,
+        windowWidth: document.documentElement.clientWidth,
+        windowHeight: document.documentElement.clientHeight
+      }).then(function (canvas) {
+        canvas.toBlob(function (blob) {
+          if (blob) {
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement("a");
+            a.href = url;
+            a.download = "shihtingfang-diner-" + stamp() + ".png";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+          }
+          capturing = false;
+        }, "image/png");
+      })["catch"](function () { capturing = false; });
+    });
   }
 })();
