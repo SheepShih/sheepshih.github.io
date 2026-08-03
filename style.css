@@ -183,7 +183,7 @@ body.page-leave .pc-deco {
 
 .menu-list {
   position: absolute;
-  top: 32%; /* メニュー全体をやや上寄せ(4項目対応) */
+  top: 33%; /* メニュー全体をやや上寄せ(4項目対応) */
   left: 50%;
   transform: translateX(-50%);
   margin: 0;
