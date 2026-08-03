@@ -192,7 +192,7 @@ body.page-leave .pc-deco {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .menu-list a {
