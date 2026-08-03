@@ -47,9 +47,43 @@
     height: 100%;
     object-fit: cover;
   }
+
+  /* 切替時の「溶ける」登場エフェクト: 歪ませたシーンがドロッと固まっていく */
+  .play-frame.melting {
+    filter: url(#meltFilter);
+    animation: melt-fade 1.4s ease both;
+  }
+  @keyframes melt-fade {
+    0%   { opacity: 0.15; }
+    35%  { opacity: 1; }
+    100% { opacity: 1; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .play-frame.melting { filter: none; animation: none; }
+  }
 </style>
 </head>
 <body>
+
+<!-- 「溶ける」用のSVGフィルター(タービュランス+ディスプレイスメント) -->
+<svg class="melt-defs" width="0" height="0" aria-hidden="true" focusable="false">
+  <defs>
+    <filter id="meltFilter" x="-15%" y="-15%" width="130%" height="150%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.009 0.006" numOctaves="2" seed="6" result="turb">
+        <animate id="meltFreq" attributeName="baseFrequency" dur="1.4s" keyTimes="0;1"
+                 values="0.009 0.03; 0.009 0.006" fill="freeze" begin="indefinite"
+                 calcMode="spline" keySplines="0.16 1 0.3 1"/>
+      </feTurbulence>
+      <feDisplacementMap in="SourceGraphic" in2="turb" scale="0"
+                         xChannelSelector="R" yChannelSelector="G">
+        <animate id="meltScale" attributeName="scale" dur="1.4s" keyTimes="0;1"
+                 values="190;0" fill="freeze" begin="indefinite"
+                 calcMode="spline" keySplines="0.16 1 0.3 1"/>
+      </feDisplacementMap>
+    </filter>
+  </defs>
+</svg>
 
 <div class="play-frame" id="playFrame" role="link" tabindex="0" aria-label="トップへ戻る">
   <img class="play-img" src="assets/img/play-closed.webp?v=1" alt="Shih Ting Fang Diner — Play は準備中です">
@@ -61,6 +95,26 @@
 <script>
 (function () {
   var frame = document.getElementById("playFrame");
+
+  // 登場時に「溶ける」エフェクトを再生。画像が用意できてから、CSSアニメと
+  // SVGアニメ(ディスプレイスメント)を同時に開始する。終わったらフィルターを外す。
+  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var img = frame.querySelector(".play-img");
+  function startMelt() {
+    frame.classList.add("melting");
+    var freq = document.getElementById("meltFreq");
+    var scale = document.getElementById("meltScale");
+    if (freq && freq.beginElement) { freq.beginElement(); }
+    if (scale && scale.beginElement) { scale.beginElement(); }
+    frame.addEventListener("animationend", function () {
+      frame.classList.remove("melting");
+    }, { once: true });
+  }
+  if (!reduceMotion) {
+    if (img.complete && img.naturalWidth > 0) { startMelt(); }
+    else { img.addEventListener("load", startMelt, { once: true }); }
+  }
+
   var goHome = function () { window.location.href = "index.html"; };
   frame.addEventListener("click", goHome);
   frame.addEventListener("keydown", function (e) {
