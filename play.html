@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Play | Shih Ting Fang 施婷方 | Portfolio</title>
+<link rel="icon" type="image/png" href="assets/img/favicon.png?v=1">
+<link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png?v=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bentham&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="pc-deco.css?v=45">
+<style>
+  :root { --diner-bg: #DF9079; }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--diner-bg);
+    font-family: "Bentham", serif;
+  }
+
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow: hidden;
+  }
+
+  /* topページのドア画像と同じサイズ・位置の枠(中に夜のダイナー店内) */
+  .play-frame {
+    position: relative;
+    width: min(100vw, 430px);
+    aspect-ratio: 768 / 1376;
+    max-height: 100dvh;
+    overflow: hidden;
+    cursor: pointer; /* シーン全体をタップでトップへ戻れる(ボタンは非表示) */
+  }
+
+  .play-img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+</style>
+</head>
+<body>
+
+<div class="play-frame" id="playFrame" role="link" tabindex="0" aria-label="トップへ戻る">
+  <img class="play-img" src="assets/img/play-closed.webp?v=1" alt="Shih Ting Fang Diner — Play は準備中です">
+</div>
+
+<!-- PC幅のみの装飾は pc-deco.js が注入する(index/about/works/play共通) -->
+<script src="pc-deco.js?v=26"></script>
+
+<script>
+(function () {
+  var frame = document.getElementById("playFrame");
+  var goHome = function () { window.location.href = "index.html"; };
+  frame.addEventListener("click", goHome);
+  frame.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goHome(); }
+  });
+})();
+</script>
+</body>
+</html>
