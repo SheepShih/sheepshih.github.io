@@ -18,13 +18,6 @@ html, body {
 
 body { display: flex; justify-content: center; }
 
-/* ページ切替エフェクト: 遷移前にフェードアウト */
-body {
-  transition: opacity 0.35s ease;
-}
-
-body.page-leave { opacity: 0; }
-
 .phone-frame {
   width: 100%;
   max-width: 430px;
@@ -35,13 +28,12 @@ body.page-leave { opacity: 0; }
 }
 
 /* ---------- ページ切替エフェクト(Aboutへ遷移時) ---------- */
-.phone-frame,
-.pc-deco {
+/* 中央のシーンだけフェード。PCの周りの装飾(.pc-deco)はページをまたいで固定のまま */
+.phone-frame {
   transition: opacity 0.35s ease;
 }
 
-body.page-leave .phone-frame,
-body.page-leave .pc-deco {
+body.page-leave .phone-frame {
   opacity: 0;
 }
 

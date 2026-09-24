@@ -28,14 +28,51 @@
     '</div>';
   document.body.insertAdjacentHTML("beforeend", html);
 
-  // 登場演出: 各パーツを背面→前面の順に少しずつ遅らせてポップインさせる
   var deco = document.querySelector(".pc-deco");
   if (!deco) return;
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var imgs = deco.querySelectorAll("img");
   var introItems = deco.querySelectorAll("img, .deco-border");
+
+  // ページをまたいで装飾をリフレッシュさせないための状態(タブを閉じるまで保持)
+  // ・登場演出は最初のページだけ ・ドラッグで動かした位置は次のページでも維持
+  function sget(k) { try { return window.sessionStorage.getItem(k); } catch (e) { return null; } }
+  function sset(k, v) { try { window.sessionStorage.setItem(k, v); } catch (e) {} }
+  function keyOf(el) {
+    var cls = el.className.split(/\s+/).filter(function (c) {
+      return c.indexOf("deco-") === 0 && c !== "deco-star";
+    });
+    return cls[cls.length - 1] || "";
+  }
+  function savePositions() {
+    var pos = {};
+    for (var k = 0; k < imgs.length; k++) {
+      var dx = parseFloat(imgs[k].dataset.dx) || 0, dy = parseFloat(imgs[k].dataset.dy) || 0;
+      if (dx || dy) pos[keyOf(imgs[k])] = [dx, dy];
+    }
+    sset("pcDecoPos", JSON.stringify(pos));
+  }
+  var introSeen = sget("pcDecoIntro") === "1";
+  sset("pcDecoIntro", "1");
+
+  if (introSeen) {
+    // 2ページ目以降: 演出なしで即表示し、前のページでの位置を復元
+    var saved = {};
+    try { saved = JSON.parse(sget("pcDecoPos") || "{}") || {}; } catch (e) {}
+    for (var s = 0; s < introItems.length; s++) introItems[s].style.animation = "none";
+    for (var p = 0; p < imgs.length; p++) {
+      var xy = saved[keyOf(imgs[p])];
+      if (xy) {
+        imgs[p].dataset.dx = xy[0];
+        imgs[p].dataset.dy = xy[1];
+        imgs[p].style.transform = "translate(" + xy[0] + "px," + xy[1] + "px)";
+      }
+    }
+  }
+
+  // 登場演出: 各パーツを背面→前面の順に少しずつ遅らせてポップインさせる
   var introDelay = 0;
-  if (!reduceMotion) {
+  if (!reduceMotion && !introSeen) {
     for (var i = 0; i < introItems.length; i++) {
       introItems[i].style.animationDelay = (i * 0.045).toFixed(3) + "s";
     }
@@ -86,6 +123,7 @@
       active.classList.remove("dragging");
       try { active.releasePointerCapture(e.pointerId); } catch (err) {}
       active = null;
+      if (moved) savePositions(); // 次のページでも同じ位置に
       // 動かさずにカメラを離した=タップ → 画面を撮る
       if (!moved && el.classList.contains("deco-camera")) { fireCamera(); }
     }
@@ -99,10 +137,11 @@
       el.dataset.dx = "0";
       el.dataset.dy = "0";
       el.style.transform = "";
+      savePositions();
     });
   }
 
-  if (reduceMotion) {
+  if (reduceMotion || introSeen) {
     enableDrag();
   } else {
     setTimeout(enableDrag, introDelay * 1000 + 100);

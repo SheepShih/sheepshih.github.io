@@ -232,9 +232,15 @@
   .cam-flash.fire { animation: none; }
 }
 
-/* ページ切替時のフェード(両ページ共通) */
-.pc-deco { transition: opacity 0.35s ease; }
-body.page-leave .pc-deco { opacity: 0; }
+/* ---------- ページ切替で装飾をリフレッシュさせない ---------- */
+/* ページ遷移時はフェードさせない(固定のまま)。
+   対応ブラウザ(Chrome/Edge 126+, Safari 18.2+)ではクロスドキュメントの
+   View Transitionで、装飾を同じ位置に留めたまま中央のシーンだけ切り替える */
+@view-transition { navigation: auto; }
+.pc-deco { view-transition-name: pc-deco; }
+::view-transition-old(pc-deco) { display: none; }
+::view-transition-new(pc-deco) { animation: none; }
+::view-transition-group(pc-deco) { animation: none; }
 
 /* スマホ幅では非表示 */
 @media (max-width: 430px) {
