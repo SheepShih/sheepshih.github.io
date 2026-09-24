@@ -51,6 +51,10 @@
   /* ---------- 登場演出: 赤いベルベットの幕が左右に開く ---------- */
   /* 読み込み中は幕が閉じた状態でシーンを隠し、画像の準備ができたら
      .curtain-open を付けて左右の袖へたぐり寄せる(折り目が縮んで束になる) */
+  /* 生地とフリンジは背景画像(play-theater.webp)のカーテンから切り出したもの。
+     curtain-fabric.webp = 右カーテンのひだの帯を、照明が当たる中ほどと同じ色・コントラストに補正(左右反転でつなぎ目なし)。縦に伸ばして使う
+     curtain-fringe.webp = 中央の飾り幕の金フリンジ(ブレードを水平に補正)
+     タイル幅は背景画像と同じ縮尺になるよう、幕の幅(=枠の51%)に対する割合で指定 */
   .stage-curtain {
     position: absolute;
     top: 0;
@@ -59,23 +63,22 @@
     z-index: 2;
     pointer-events: none;
     background:
-      /* 上下の陰影 */
-      linear-gradient(to bottom, rgba(40, 0, 4, 0.45), transparent 14%, transparent 82%, rgba(40, 0, 4, 0.5)),
-      /* ベルベットの縦ひだ */
-      repeating-linear-gradient(90deg,
-        #5e0b10 0, #8f1a21 3.5%, #c2363c 6%, #9b1f26 8.5%, #5e0b10 11%);
+      /* 照明の当たり方: 上は影、中ほどが明るく、足元でまた少し沈む */
+      linear-gradient(to bottom, rgba(30, 0, 2, 0.4), transparent 20%, transparent 80%, rgba(30, 0, 2, 0.2)),
+      url("assets/img/curtain-fabric.webp?v=3");
+    background-repeat: no-repeat, repeat-x;
+    /* 生地は裾(下2.6%)の手前で止め、その下はフリンジだけが垂れる */
+    background-size: 100% 97.4%, 52.7% 97.4%; /* 300px / 1116px / 0.51 */
   }
+  .stage-curtain.right { background-position: 0 0, right top; }
   .stage-curtain::after { /* 裾の金のフリンジ */
     content: "";
     position: absolute;
     left: 0;
     right: 0;
     bottom: 0;
-    height: 2.2%;
-    background:
-      linear-gradient(to bottom, #e2bf66, #9a7424),
-      repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.25) 0 1px, transparent 1px 4px);
-    background-blend-mode: multiply;
+    height: 2.6%; /* 背景のカーテン裾のフリンジと同じくらいの長さ */
+    background: url("assets/img/curtain-fringe.webp?v=2") repeat-x left top / 21.1% 100%; /* 120px / 1116px / 0.51 */
   }
   .stage-curtain.left  { left: 0;  transform-origin: left center;  box-shadow: inset -14px 0 18px -10px rgba(0, 0, 0, 0.55); }
   .stage-curtain.right { right: 0; transform-origin: right center; box-shadow: inset 14px 0 18px -10px rgba(0, 0, 0, 0.55); }
