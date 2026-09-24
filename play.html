@@ -106,13 +106,18 @@
   }
   /* ↑は縦帯に分けられない環境向けの簡易版。通常は下の「布の縦帯」版で動く */
 
-  /* ---------- 布の縦帯でリアルに開く(JSで各幕を12本の帯に分割) ----------
-     .curtain-strip = 幕を縦に12等分した1本。袖へ寄せる移動と圧縮を担当(袖側が起点)
+  /* ---------- 布の縦帯で、アコーディオン状に折りたたみながら開く ----------
+     JSで各幕を12本の帯(=ひだの面)に分け、1本おきに逆向きへ3D回転させて折り目を作る。
+     折れは合わせ目から袖側へ伝わり、面の向きに応じて明暗が付く(位置は毎フレームJSで計算)
+     .curtain-strip = ひだの面1枚(3D回転・位置)
      .curtain-sway  = 裾が遅れてついてくる揺れ(skewX、上端が起点)
-     .curtain-cloth / .curtain-hem = その帯に当たる部分の生地とフリンジ
+     .curtain-cloth / .curtain-hem = その面に当たる部分の生地とフリンジ
        (背景サイズ = 2×12 = 2400% で、1枚の幕のうちその帯の位置だけを表示)
-     .curtain-pleat = 束ねられるほど濃くなるひだの陰影 */
-  .stage-curtain.stripped { background: none; }
+     .curtain-pleat = 面の丸みの陰影 / .curtain-tone = 面の向きによる明暗 */
+  .stage-curtain.stripped {
+    background: none;
+    perspective: 700px;
+  }
   .stage-curtain.stripped::before,
   .stage-curtain.stripped::after { display: none; }
   .play-frame.curtain-open .stage-curtain.stripped { animation: none; }
@@ -120,10 +125,29 @@
     position: absolute;
     top: 0;
     bottom: 0;
+    left: 0;
     width: calc(100% / 12);
+    backface-visibility: hidden;
   }
   .stage-curtain.left  .curtain-strip { transform-origin: left center; }
   .stage-curtain.right .curtain-strip { transform-origin: right center; }
+  /* 面の境目に隙間の線が出ないよう、生地とフリンジを右隣へ2pxはみ出させて重ねる
+     (模様の位置はJSがピクセル単位で合わせる) */
+  .curtain-strip .curtain-cloth,
+  .curtain-strip .curtain-hem { right: -2px; }
+  /* 裾が遅れて傾いたときに袖側の下端に隙間が出ないよう、いちばん外側の面は外へ延ばしておく */
+  .stage-curtain.left  .curtain-strip.outer .curtain-cloth,
+  .stage-curtain.left  .curtain-strip.outer .curtain-hem  { left: -30px; }
+  .stage-curtain.right .curtain-strip.outer .curtain-cloth,
+  .stage-curtain.right .curtain-strip.outer .curtain-hem  { right: -30px; }
+  .curtain-tone {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 5.3%;
+    opacity: 0;
+  }
   .curtain-sway {
     position: absolute;
     inset: 0;
@@ -191,74 +215,145 @@
   var curtains = frame.querySelectorAll(".stage-curtain");
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  // 幕を縦帯に分けて、布がたたまれるように開く(Web Animations API 対応環境のみ)
-  var N = 12;           // 片側の帯の数
-  var GATHER_RATIO = 0.2; // 束ねたときの幅(元の幕幅に対する割合)
-  var START = 250, GATHER = 1500, EXIT = 700; // ms
-  var useStrips = !reduceMotion && typeof frame.animate === "function";
+  // 幕をひだの面(縦帯)に分け、アコーディオン状に折りたたみながら開く。
+  // 面は1枚おきに逆向きへ3D回転(=折り目)。折れは合わせ目から始まり、
+  // 袖側の布は押されるまで平らなまま。各面の位置は折れ角から毎フレーム積み上げて求める
+  var N = 12;                              // 片側の面の数(2面で1つのひだ)
+  var GATHER_RATIO = 0.2;                  // 束ねたときの幅(元の幕幅に対する割合)
+  var MAX_FOLD = Math.acos(GATHER_RATIO);  // 束ねた幅になる面の傾き(約78度)
+  var START = 250;     // 開き始め(ms)
+  var GATHER = 1500;   // 折りたたみにかける時間(ms)
+  var SPREAD = 0.45;   // 袖側の面ほど遅れて折れ始める割合
+  var SETTLE = 420;    // 折りきった後に裾が揺り戻す時間(ms)
+  var EXIT = 700;      // 束ねた幕が袖へ引っ込む時間(ms)
+  var EXIT_AT = START + GATHER - 150;
+  var TOTAL = EXIT_AT + EXIT;
+  var useStrips = !reduceMotion;
+  var panels = [];
 
   function buildStrips(panel, side) {
     panel.classList.add("stripped");
+    var list = [];
     for (var i = 0; i < N; i++) {
       var strip = document.createElement("div");
       strip.className = "curtain-strip";
-      strip.style.left = (i * 100 / N) + "%";
-      // 1枚の幕(左右合わせて2N本)のうち、この帯の位置を背景から切り出す
+      // 1枚の幕(左右合わせて2N本)のうち、この面の位置を背景から切り出す
       var idx = side === "left" ? i : N + i;
       var posX = (idx / (2 * N - 1) * 100) + "% 0";
+      var k = side === "left" ? i : N - 1 - i; // 0 = 袖側の端, N-1 = 合わせ目(先頭)
+      strip.dataset.idx = idx;
       strip.innerHTML =
         '<div class="curtain-sway">' +
         '<div class="curtain-cloth" style="background-position:' + posX + '"></div>' +
         '<div class="curtain-hem" style="background-position:' + posX + '"></div>' +
         '<div class="curtain-pleat"></div>' +
+        // 奥を向く面は暗く、客席側(中央)を向く面はほんのり明るく
+        '<div class="curtain-tone" style="background:' + (k % 2 === 0 ? "rgb(25,0,3)" : "rgb(255,205,185)") + '"></div>' +
         "</div>";
+      if (k === 0) strip.classList.add("outer");
       panel.appendChild(strip);
+      list[k] = strip;
     }
+    panel.style.transformOrigin = "50% 0"; // 裾の遅れ(skew)は上端のレールを起点に
+    panels.push({ el: panel, side: side, dir: side === "left" ? -1 : 1, strips: list });
   }
+
+  function clamp01(v) { return v < 0 ? 0 : v > 1 ? 1 : v; }
+  function easeInOut(p) { return p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2; }
+  function easeIn(p) { return p * p * p; }
+
+  // 時刻 t(ms) の幕の形を描く
+  function render(t) {
+    var foldDur = GATHER * (1 - SPREAD);
+    panels.forEach(function (P) {
+      var w = P.el.clientWidth / N;
+      var x = 0, z = 0; // 袖側の端から見た、次の面の付け根の位置
+      for (var k = 0; k < N; k++) {
+        var t0 = START + ((N - 1 - k) / (N - 1)) * GATHER * SPREAD;
+        var raw = clamp01((t - t0) / foldDur);
+        var p = easeInOut(raw);
+        var a = p * MAX_FOLD * (k % 2 === 0 ? 1 : -1);
+        var strip = P.strips[k];
+        var left = P.side === "left" ? x : (N - 1) * w - x;
+        strip.style.transform = "translate3d(" + left + "px,0," + z + "px) rotateY(" +
+          (P.side === "left" ? a : -a) + "rad)";
+        x += w * Math.cos(a);
+        z -= w * Math.sin(a);
+        // 面の向きによる明暗と、ひだの丸みの陰影
+        var f = Math.sin(Math.abs(a));
+        strip.lastChild.lastChild.style.opacity = (k % 2 === 0 ? 0.7 : 0.24) * f;
+        strip.lastChild.children[2].style.opacity = 0.55 * f;
+      }
+      // 裾は上のレールより遅れてついてきて、折りきった後に小さく揺り戻す
+      // (面ごとに角度を変えると下端に段差が出るので、幕全体に同じ傾きをかける)
+      var leadT0 = START, leadRaw = clamp01((t - leadT0) / foldDur);
+      var amp = -P.dir * 2.5;
+      var skew = leadRaw < 1 ? amp * Math.sin(Math.PI * easeInOut(leadRaw))
+                             : -0.35 * amp * Math.sin(Math.PI * clamp01((t - leadT0 - foldDur) / SETTLE));
+      // 束ねた幕ごと袖へ引っ込む
+      P.el.style.transform = "translateX(" + (P.dir * 115 * easeIn(clamp01((t - EXIT_AT) / EXIT))) + "%) skewX(" + skew + "deg)";
+    });
+  }
+
+  // 生地の模様を面の幅(px)に合わせて切り出す(はみ出した2pxにも隣の模様が続くように)
+  function layoutTextures() {
+    panels.forEach(function (P) {
+      var w = P.el.clientWidth / N;
+      P.strips.forEach(function (strip) {
+        // 左幕の外側の面は左へ30px延ばしてあるので、その分だけ模様をずらす
+        var shift = (P.side === "left" && strip.classList.contains("outer")) ? 30 : 0;
+        var off = (-strip.dataset.idx * w + shift) + "px 0";
+        var size = (2 * N * w) + "px 100%";
+        var layers = strip.firstChild.children; // cloth, hem
+        for (var i = 0; i < 2; i++) {
+          layers[i].style.backgroundSize = size;
+          layers[i].style.backgroundPosition = off;
+          layers[i].style.backgroundRepeat = "repeat-x"; // 延ばした部分にも生地が続くように
+        }
+      });
+    });
+  }
+
   if (useStrips) {
     buildStrips(curtains[0], "left");
     buildStrips(curtains[1], "right");
+    layoutTextures();
+    render(0);
+    window.addEventListener("resize", function () {
+      layoutTextures();
+      if (!frame.classList.contains("curtain-open")) render(0);
+    });
+  }
+
+  // 確認用: URLに #curtain-debug を付けると window.__curtainAt(ms) でその瞬間の形に止められる
+  var frozen = null;
+  if (location.hash === "#curtain-debug") {
+    window.__curtainAt = function (t) { frozen = t; render(t); };
   }
 
   function animateStrips() {
-    var exits = [];
-    [[curtains[0], "left", -1], [curtains[1], "right", 1]].forEach(function (p) {
-      var panel = p[0], side = p[1], dir = p[2];
-      var strips = panel.querySelectorAll(".curtain-strip");
-      for (var i = 0; i < N; i++) {
-        var strip = strips[i];
-        var k = side === "left" ? i : N - 1 - i;  // 0 = 袖側の端, N-1 = 合わせ目(先頭)
-        var lag = (N - 1 - k) / (N - 1);          // 合わせ目から遠いほど遅れて動き出す
-        var delay = START + lag * GATHER * 0.35;
-        var dur = GATHER - lag * GATHER * 0.35;
-        var move = dir * k * (1 - GATHER_RATIO) * 100; // 袖側へ寄せる量(帯の幅に対する%)
-        if (k === N - 1) strip.classList.add("lead");
-        // 袖へ押し寄せながら圧縮される
-        strip.animate([
-          { transform: "translateX(0) scaleX(1)" },
-          { transform: "translateX(" + move + "%) scaleX(" + GATHER_RATIO + ")" }
-        ], { duration: dur, delay: delay, easing: "cubic-bezier(0.6, 0.02, 0.3, 1)", fill: "both" });
-        // 裾は上のレールより遅れてついてきて、最後に小さく揺り戻す
-        var amp = -dir * 4 * (k / (N - 1));
-        strip.firstChild.animate([
-          { transform: "skewX(0deg)" },
-          { transform: "skewX(" + amp + "deg)", offset: 0.5 },
-          { transform: "skewX(" + (-amp * 0.35) + "deg)", offset: 0.82 },
-          { transform: "skewX(0deg)" }
-        ], { duration: dur + 350, delay: delay, easing: "ease-in-out", fill: "both" });
-        // 束ねられるほど、ひだの陰影が深くなる
-        strip.querySelector(".curtain-pleat").animate(
-          [{ opacity: 0 }, { opacity: 1 }],
-          { duration: dur, delay: delay, easing: "ease-out", fill: "both" });
-      }
-      // 束ねた幕ごと袖へ引っ込む
-      exits.push(panel.animate(
-        [{ transform: "translateX(0)" }, { transform: "translateX(" + (dir * 115) + "%)" }],
-        { duration: EXIT, delay: START + GATHER - 150, easing: "cubic-bezier(0.5, 0, 0.75, 0)", fill: "both" }));
-    });
-    Promise.all(exits.map(function (a) { return a.finished; })).then(function () {
+    panels.forEach(function (P) { P.strips[N - 1].classList.add("lead"); });
+    var begin = performance.now(), finished = false;
+    function finish() {
+      if (finished) return;
+      finished = true;
       for (var j = 0; j < curtains.length; j++) curtains[j].remove();
-    })["catch"](function () {});
+    }
+    function tick() {
+      if (finished) return;
+      if (frozen !== null) { next(); return; }
+      var t = performance.now() - begin;
+      render(Math.min(t, TOTAL));
+      if (t >= TOTAL) finish(); else next();
+    }
+    // rAFが止まる環境(裏タブ等)でもタイマーで進める
+    function next() {
+      var ran = false;
+      var run = function () { if (!ran) { ran = true; tick(); } };
+      requestAnimationFrame(run);
+      setTimeout(run, 50);
+    }
+    next();
   }
 
   var opened = false;
