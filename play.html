@@ -51,10 +51,12 @@
   /* ---------- 登場演出: 赤いベルベットの幕が左右に開く ---------- */
   /* 読み込み中は幕が閉じた状態でシーンを隠し、画像の準備ができたら
      .curtain-open を付けて左右の袖へたぐり寄せる(折り目が縮んで束になる) */
-  /* 生地とフリンジは背景画像(play-theater.webp)のカーテンから切り出したもの。
-     curtain-fabric.webp = 右カーテンのひだの帯を、照明が当たる中ほどと同じ色・コントラストに補正(左右反転でつなぎ目なし)。縦に伸ばして使う
-     curtain-fringe.webp = 中央の飾り幕の金フリンジ(ブレードを水平に補正)
-     タイル幅は背景画像と同じ縮尺になるよう、幕の幅(=枠の51%)に対する割合で指定 */
+  /* 幕の見た目は参考画像(閉幕した劇場ステージ)の幕から切り出したもの。
+     curtain-drape.webp        = 幕の本体(飾り幕の下〜裾まで、中央にスポットライトの明るみ)
+     curtain-drape-fringe.webp = 裾の金フリンジ(糸の隙間は透過)
+     1枚の幕を左右の幕に半分ずつ割り当てる(背景サイズ200%で左半分/右半分を表示)ので、
+     閉じているときは継ぎ目なく1枚の幕に見える。本体は縦に伸ばして枠の高さに合わせ、
+     フリンジは横幅に対して元の縦横比のまま(445×46 → 枠高さの約5.3%) */
   .stage-curtain {
     position: absolute;
     top: 0;
@@ -62,26 +64,33 @@
     width: 51%; /* 中央で少し重ねて隙間を出さない */
     z-index: 2;
     pointer-events: none;
-    background:
-      /* 照明の当たり方: 上は影、中ほどが明るく、足元でまた少し沈む */
-      linear-gradient(to bottom, rgba(30, 0, 2, 0.4), transparent 20%, transparent 80%, rgba(30, 0, 2, 0.2)),
-      url("assets/img/curtain-fabric.webp?v=3");
-    background-repeat: no-repeat, repeat-x;
-    /* 生地は裾(下2.6%)の手前で止め、その下はフリンジだけが垂れる */
-    background-size: 100% 97.4%, 52.7% 97.4%; /* 300px / 1116px / 0.51 */
+    background: url("assets/img/curtain-drape.webp?v=1") no-repeat left top / 200% 94.7%;
   }
-  .stage-curtain.right { background-position: 0 0, right top; }
-  .stage-curtain::after { /* 裾の金のフリンジ */
+  .stage-curtain::after { /* 裾の金フリンジ */
     content: "";
     position: absolute;
     left: 0;
     right: 0;
     bottom: 0;
-    height: 2.6%; /* 背景のカーテン裾のフリンジと同じくらいの長さ */
-    background: url("assets/img/curtain-fringe.webp?v=2") repeat-x left top / 21.1% 100%; /* 120px / 1116px / 0.51 */
+    height: 5.3%;
+    background: url("assets/img/curtain-drape-fringe.webp?v=1") no-repeat left top / 200% 100%;
   }
-  .stage-curtain.left  { left: 0;  transform-origin: left center;  box-shadow: inset -14px 0 18px -10px rgba(0, 0, 0, 0.55); }
-  .stage-curtain.right { right: 0; transform-origin: right center; box-shadow: inset 14px 0 18px -10px rgba(0, 0, 0, 0.55); }
+  .stage-curtain.right,
+  .stage-curtain.right::after { background-position: right top; }
+  .stage-curtain.left  { left: 0;  transform-origin: left center; }
+  .stage-curtain.right { right: 0; transform-origin: right center; }
+  /* 合わせ目にだけ、ほんのり影(開き始めに2枚の幕だと分かる程度) */
+  .stage-curtain.left::before,
+  .stage-curtain.right::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 5.3%;
+    width: 6px;
+    background: linear-gradient(to right, transparent, rgba(60, 0, 4, 0.35), transparent);
+  }
+  .stage-curtain.left::before  { right: 0; }
+  .stage-curtain.right::before { left: 0; }
 
   .play-frame.curtain-open .stage-curtain.left  { animation: curtain-left  1.6s cubic-bezier(0.65, 0, 0.25, 1) 0.25s both; }
   .play-frame.curtain-open .stage-curtain.right { animation: curtain-right 1.6s cubic-bezier(0.65, 0, 0.25, 1) 0.25s both; }
