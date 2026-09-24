@@ -185,20 +185,48 @@
   .stage-curtain.left  .curtain-strip.lead { box-shadow: 10px 0 18px -6px rgba(20, 0, 2, 0.45); }
   .stage-curtain.right .curtain-strip.lead { box-shadow: -10px 0 18px -6px rgba(20, 0, 2, 0.45); }
 
-  /* 幕の向こうのステージは少し暗く・奥から照明が灯るように */
-  .play-img { transition: filter 1.4s ease 0.45s, transform 1.8s cubic-bezier(0.22, 1, 0.36, 1) 0.25s; }
-  .play-frame:not(.curtain-open) .play-img { filter: brightness(0.55); transform: scale(1.04); }
+  /* ---------- 幕の向こうの劇場(背景)の演出 ----------
+     .stage-scene = 背景画像と照明を重ねた層。幕が開くのに合わせて、少し引いてぼやけた状態から
+     カメラが寄るように拡大しつつピントが合い、客席の暗さから明るくなる(値は毎フレームJSで設定)
+     .marquee-glow = NOW SHOWING の電球が灯る光(チカチカしてから点灯)
+     .stage-spot   = スクリーンの光がふわっと広がる */
+  .stage-scene {
+    position: absolute;
+    inset: 0;
+    transform-origin: 50% 45%;
+    box-shadow: 0 0 36px 22px #1c0907; /* 縁を暗がりに溶かす(元の大きさになると枠の外へ) */
+  }
+  /* 劇場が奥から近づいてくる間、周りに見えるのは客席の暗がり */
+  .play-frame { background: #1c0907; }
+  .stage-fx {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0;
+    mix-blend-mode: screen;
+  }
+  .marquee-glow {
+    background: radial-gradient(ellipse 50% 9.5% at 50% 12.5%,
+      rgba(255, 214, 150, 0.95), rgba(255, 172, 95, 0.4) 55%, transparent 78%);
+  }
+  .stage-spot {
+    background: radial-gradient(ellipse 46% 17% at 50% 51%,
+      rgba(255, 246, 228, 0.95), rgba(255, 222, 185, 0.3) 58%, transparent 80%);
+  }
 
   @media (prefers-reduced-motion: reduce) {
     .stage-curtain { display: none; }
-    .play-frame .play-img { filter: none; transform: none; transition: none; }
   }
 </style>
 </head>
 <body>
 
 <div class="play-frame" id="playFrame" role="link" tabindex="0" aria-label="トップへ戻る">
-  <img class="play-img" src="assets/img/play-theater.webp?v=2" alt="Shih TingFang Diner — Play: NOW SHOWING の劇場ステージ">
+  <div class="stage-scene">
+    <img class="play-img" src="assets/img/play-theater.webp?v=2" alt="Shih TingFang Diner — Play: NOW SHOWING の劇場ステージ">
+    <div class="stage-fx marquee-glow" aria-hidden="true"></div>
+    <div class="stage-fx stage-spot" aria-hidden="true"></div>
+  </div>
   <div class="stage-curtain left" aria-hidden="true"></div>
   <div class="stage-curtain right" aria-hidden="true"></div>
 </div>
@@ -262,8 +290,41 @@
   function easeInOut(p) { return p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2; }
   function easeIn(p) { return p * p * p; }
 
+  // 幕の向こうの劇場: 奥から寄る・灯る・看板が点く・スクリーンが光る
+  var scene = frame.querySelector(".stage-scene");
+  var marquee = frame.querySelector(".marquee-glow");
+  var spot = frame.querySelector(".stage-spot");
+  function easeOut(p) { return 1 - Math.pow(1 - p, 3); }
+  function span(t, a, b) { return clamp01((t - a) / (b - a)); }
+  // 看板の電球: [時刻(ms, 開き始めから), 明るさ] を順につなぐ(チカッ、チカッ、パッと点灯)
+  var MARQUEE_KEYS = [[250, 0], [300, 0.85], [340, 0.1], [410, 0.7], [440, 0.15], [520, 0.95], [900, 0.6], [1800, 0.3]];
+  function marqueeLevel(t) {
+    var r = t - START;
+    if (r <= MARQUEE_KEYS[0][0]) return 0;
+    for (var i = 1; i < MARQUEE_KEYS.length; i++) {
+      var a = MARQUEE_KEYS[i - 1], b = MARQUEE_KEYS[i];
+      if (r <= b[0]) return a[1] + (b[1] - a[1]) * ((r - a[0]) / (b[0] - a[0]));
+    }
+    return MARQUEE_KEYS[MARQUEE_KEYS.length - 1][1];
+  }
+  var sceneImg = scene.querySelector(".play-img");
+  function renderScene(t) {
+    // 劇場が暗がりの奥から近づいてくる(幕が開いている間に、少し小さい状態から元の大きさへ)
+    var zoom = 0.88 + 0.12 * easeInOut(span(t, START + 300, TOTAL));
+    var blur = 4 * (1 - easeOut(span(t, START + 200, START + 1400)));          // ぼけ → ピント
+    var light = 0.3 + 0.7 * easeInOut(span(t, START + 200, START + 1700));      // 暗い → 明るい
+    scene.style.transform = "scale(" + zoom + ")";
+    // 暗さ・ぼかしは劇場の画像だけに(看板やスクリーンの光は暗くしない)
+    sceneImg.style.filter = "brightness(" + light + ")" + (blur > 0.05 ? " blur(" + blur + "px)" : "");
+    marquee.style.opacity = marqueeLevel(t);
+    spot.style.opacity = t < START + 1200
+      ? 0.55 * easeInOut(span(t, START + 300, START + 1200))
+      : 0.55 - 0.35 * span(t, START + 1200, TOTAL);
+  }
+
   // 時刻 t(ms) の幕の形を描く
   function render(t) {
+    renderScene(t);
     var foldDur = GATHER * (1 - SPREAD);
     panels.forEach(function (P) {
       var w = P.el.clientWidth / N;
@@ -338,6 +399,11 @@
       if (finished) return;
       finished = true;
       for (var j = 0; j < curtains.length; j++) curtains[j].remove();
+      // 開ききったら、スクリーンの光は余韻を残して消え、看板はほんのり灯ったまま
+      scene.style.transform = "";
+      sceneImg.style.filter = "";
+      spot.style.transition = "opacity 1.2s ease";
+      spot.style.opacity = 0;
     }
     function tick() {
       if (finished) return;
