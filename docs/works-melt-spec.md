@@ -1,19 +1,15 @@
-# 「溶ける」登場エフェクト 実装仕様（works / play 共通）
+# 「溶ける」登場エフェクト 実装仕様（works）
 
-`works.html`（Works 2022〜 の「準備中（CLOSED）」ページ）と
-`play.html`（Play の夜のダイナー・CLOSEDページ）で、店内画像が
+`works.html`（Works 2022〜 の「準備中（CLOSED）」ページ）で、店内画像が
 **歪んだ状態からドロッと溶けて固まっていく**登場演出の実装仕様。
 
-> **適用ページ**
-> - `works.html` … 要素 `.works-frame` / `#worksFrame` / `.works-img`
-> - `play.html` … 要素 `.play-frame` / `#playFrame` / `.play-img`
+> **適用ページ**: `works.html` のみ（要素 `.works-frame` / `#worksFrame` / `.works-img`）
 >
-> 実装は**完全に同一**で、クラス名・要素IDだけが異なる（`works` ⇄ `play`）。
-> 以降のコード例は works 版で記載。play 版は `works`→`play` に読み替える。
-> SVGフィルター定義（`#meltFilter` ほか）とCSSキーフレーム（`melt-fade`）は
-> 両ページで**同じ名前をそのまま使用**（別ページなので衝突しない）。
+> `play.html` は以前この演出を共有していたが、背景を「NOW SHOWING」の劇場ステージに
+> 変更したのに合わせて、**赤い幕が左右に開く演出**（`.stage-curtain` / `curtain-open`、
+> 実装は play.html 内にインライン）に置き換えた。
 
-- 対象要素: `.works-frame` / `.play-frame`（トップのドア画像と同サイズ・同位置の枠）
+- 対象要素: `.works-frame`（トップのドア画像と同サイズ・同位置の枠）
 - 仕組み: **SVGフィルター（turbulence + displacement）** を CSS で適用し、
   フィルターのパラメータを **SMILアニメーション**で時間変化させる
 - トリガー: 画像ロード完了時に一度だけ再生
@@ -231,5 +227,5 @@
 
 ---
 
-_対象ファイル: `portfolio-site/works.html` および `portfolio-site/play.html`
-（それぞれ `<style>` / インラインSVG / `<script>` に同一実装。クラス名・IDのみ `works` ⇄ `play`）_
+_対象ファイル: `portfolio-site/works.html`
+（`<style>` / インラインSVG / `<script>` に実装）_

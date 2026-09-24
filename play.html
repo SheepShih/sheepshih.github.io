@@ -48,45 +48,67 @@
     object-fit: cover;
   }
 
-  /* 切替時の「溶ける」登場エフェクト: 歪ませたシーンがドロッと固まっていく */
-  .play-frame.melting {
-    filter: url(#meltFilter);
-    animation: melt-fade 1.4s ease both;
+  /* ---------- 登場演出: 赤いベルベットの幕が左右に開く ---------- */
+  /* 読み込み中は幕が閉じた状態でシーンを隠し、画像の準備ができたら
+     .curtain-open を付けて左右の袖へたぐり寄せる(折り目が縮んで束になる) */
+  .stage-curtain {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 51%; /* 中央で少し重ねて隙間を出さない */
+    z-index: 2;
+    pointer-events: none;
+    background:
+      /* 上下の陰影 */
+      linear-gradient(to bottom, rgba(40, 0, 4, 0.45), transparent 14%, transparent 82%, rgba(40, 0, 4, 0.5)),
+      /* ベルベットの縦ひだ */
+      repeating-linear-gradient(90deg,
+        #5e0b10 0, #8f1a21 3.5%, #c2363c 6%, #9b1f26 8.5%, #5e0b10 11%);
   }
-  @keyframes melt-fade {
-    0%   { opacity: 0.15; }
-    35%  { opacity: 1; }
-    100% { opacity: 1; }
+  .stage-curtain::after { /* 裾の金のフリンジ */
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2.2%;
+    background:
+      linear-gradient(to bottom, #e2bf66, #9a7424),
+      repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.25) 0 1px, transparent 1px 4px);
+    background-blend-mode: multiply;
+  }
+  .stage-curtain.left  { left: 0;  transform-origin: left center;  box-shadow: inset -14px 0 18px -10px rgba(0, 0, 0, 0.55); }
+  .stage-curtain.right { right: 0; transform-origin: right center; box-shadow: inset 14px 0 18px -10px rgba(0, 0, 0, 0.55); }
+
+  .play-frame.curtain-open .stage-curtain.left  { animation: curtain-left  1.6s cubic-bezier(0.65, 0, 0.25, 1) 0.25s both; }
+  .play-frame.curtain-open .stage-curtain.right { animation: curtain-right 1.6s cubic-bezier(0.65, 0, 0.25, 1) 0.25s both; }
+  @keyframes curtain-left {
+    0%   { transform: translateX(0)     scaleX(1); }
+    70%  { transform: translateX(0)     scaleX(0.22); } /* 袖にたぐり寄せる */
+    100% { transform: translateX(-110%) scaleX(0.22); } /* そのまま袖に引っ込む */
+  }
+  @keyframes curtain-right {
+    0%   { transform: translateX(0)    scaleX(1); }
+    70%  { transform: translateX(0)    scaleX(0.22); }
+    100% { transform: translateX(110%) scaleX(0.22); }
   }
 
+  /* 幕の向こうのステージは少し暗く・奥から照明が灯るように */
+  .play-img { transition: filter 1.4s ease 0.45s, transform 1.8s cubic-bezier(0.22, 1, 0.36, 1) 0.25s; }
+  .play-frame:not(.curtain-open) .play-img { filter: brightness(0.55); transform: scale(1.04); }
+
   @media (prefers-reduced-motion: reduce) {
-    .play-frame.melting { filter: none; animation: none; }
+    .stage-curtain { display: none; }
+    .play-frame .play-img { filter: none; transform: none; transition: none; }
   }
 </style>
 </head>
 <body>
 
-<!-- 「溶ける」用のSVGフィルター(タービュランス+ディスプレイスメント) -->
-<svg class="melt-defs" width="0" height="0" aria-hidden="true" focusable="false">
-  <defs>
-    <filter id="meltFilter" x="-15%" y="-15%" width="130%" height="150%" color-interpolation-filters="sRGB">
-      <feTurbulence type="fractalNoise" baseFrequency="0.009 0.006" numOctaves="2" seed="6" result="turb">
-        <animate id="meltFreq" attributeName="baseFrequency" dur="1.4s" keyTimes="0;1"
-                 values="0.009 0.03; 0.009 0.006" fill="freeze" begin="indefinite"
-                 calcMode="spline" keySplines="0.16 1 0.3 1"/>
-      </feTurbulence>
-      <feDisplacementMap in="SourceGraphic" in2="turb" scale="0"
-                         xChannelSelector="R" yChannelSelector="G">
-        <animate id="meltScale" attributeName="scale" dur="1.4s" keyTimes="0;1"
-                 values="190;0" fill="freeze" begin="indefinite"
-                 calcMode="spline" keySplines="0.16 1 0.3 1"/>
-      </feDisplacementMap>
-    </filter>
-  </defs>
-</svg>
-
 <div class="play-frame" id="playFrame" role="link" tabindex="0" aria-label="トップへ戻る">
   <img class="play-img" src="assets/img/play-theater.webp?v=2" alt="Shih TingFang Diner — Play: NOW SHOWING の劇場ステージ">
+  <div class="stage-curtain left" aria-hidden="true"></div>
+  <div class="stage-curtain right" aria-hidden="true"></div>
 </div>
 
 <!-- PC幅のみの装飾は pc-deco.js が注入する(index/about/works/play共通) -->
@@ -96,24 +118,28 @@
 (function () {
   var frame = document.getElementById("playFrame");
 
-  // 登場時に「溶ける」エフェクトを再生。画像が用意できてから、CSSアニメと
-  // SVGアニメ(ディスプレイスメント)を同時に開始する。終わったらフィルターを外す。
-  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // 登場時に幕を開く。画像の準備ができてから開け、開ききったら幕の要素を外す
   var img = frame.querySelector(".play-img");
-  function startMelt() {
-    frame.classList.add("melting");
-    var freq = document.getElementById("meltFreq");
-    var scale = document.getElementById("meltScale");
-    if (freq && freq.beginElement) { freq.beginElement(); }
-    if (scale && scale.beginElement) { scale.beginElement(); }
-    frame.addEventListener("animationend", function () {
-      frame.classList.remove("melting");
+  var curtains = frame.querySelectorAll(".stage-curtain");
+  var opened = false;
+  function openCurtain() {
+    if (opened) return;
+    opened = true;
+    curtains[1].addEventListener("animationend", function () {
+      for (var i = 0; i < curtains.length; i++) curtains[i].remove();
     }, { once: true });
+    // 閉じた状態を一瞬見せてから開ける(キャッシュ済みでも演出が見えるように)。
+    // rAFが止まる環境(裏タブ等)でも確実に開くよう、タイマーを併用する
+    var go = function () { frame.classList.add("curtain-open"); };
+    requestAnimationFrame(function () { requestAnimationFrame(go); });
+    setTimeout(go, 120);
   }
-  if (!reduceMotion) {
-    if (img.complete && img.naturalWidth > 0) { startMelt(); }
-    else { img.addEventListener("load", startMelt, { once: true }); }
+  if (img.complete && img.naturalWidth > 0) { openCurtain(); }
+  else {
+    img.addEventListener("load", openCurtain, { once: true });
+    img.addEventListener("error", openCurtain, { once: true });
   }
+  setTimeout(openCurtain, 4000); // 読み込みが遅くても幕が閉じたままにならないように
 
   var goHome = function () { window.location.href = "index.html"; };
   frame.addEventListener("click", goHome);
