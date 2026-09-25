@@ -336,8 +336,8 @@
         z -= w * Math.sin(a);
         // 面の向きによる明暗と、ひだの丸みの陰影
         var f = Math.sin(Math.abs(a));
-        strip.lastChild.lastChild.style.opacity = (k % 2 === 0 ? 0.7 : 0.24) * f;
-        strip.lastChild.children[2].style.opacity = 0.55 * f;
+        strip.lastChild.lastChild.style.opacity = (k % 2 === 0 ? 0.85 : 0.35) * f;
+        strip.lastChild.children[2].style.opacity = 0.7 * f;
       }
       // 裾は上のレールより遅れてついてきて、折りきった後に小さく揺り戻す
       // (面ごとに角度を変えると下端に段差が出るので、幕全体に同じ傾きをかける)
