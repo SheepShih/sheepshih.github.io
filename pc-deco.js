@@ -52,6 +52,19 @@
     }
     sset("pcDecoPos", JSON.stringify(pos));
   }
+  // ページの再読み込み(リロード)のときは装飾をリセット: 演出を最初から、位置も元に戻す
+  // (リンクでのページ移動はリフレッシュしない)
+  var navType = "";
+  try {
+    var nav = performance.getEntriesByType("navigation")[0];
+    navType = nav ? nav.type : (performance.navigation && performance.navigation.type === 1 ? "reload" : "");
+  } catch (e) {}
+  if (navType === "reload") {
+    try {
+      window.sessionStorage.removeItem("pcDecoIntro");
+      window.sessionStorage.removeItem("pcDecoPos");
+    } catch (e) {}
+  }
   var introSeen = sget("pcDecoIntro") === "1";
   sset("pcDecoIntro", "1");
 
