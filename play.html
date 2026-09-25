@@ -114,9 +114,10 @@
      .curtain-cloth / .curtain-hem = その面に当たる部分の生地とフリンジ
        (背景サイズ = 2×12 = 2400% で、1枚の幕のうちその帯の位置だけを表示)
      .curtain-pleat = 面の丸みの陰影 / .curtain-tone = 面の向きによる明暗 */
+  /* 遠近感(perspective)は付けない: 付けると奥へ折れた面が小さく描かれ、
+     上端・下端に隙間が出る。折れ具合は面の幅と明暗で表現する */
   .stage-curtain.stripped {
     background: none;
-    perspective: 700px;
   }
   .stage-curtain.stripped::before,
   .stage-curtain.stripped::after { display: none; }
