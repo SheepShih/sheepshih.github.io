@@ -211,8 +211,65 @@
       rgba(255, 246, 228, 0.95), rgba(255, 222, 185, 0.3) 58%, transparent 80%);
   }
 
+  /* ---------- スクリーンに映す内容(アプリアイコンとボタン) ----------
+     位置・大きさはFigma(枠 402×720)に対する割合。幕が開ききってから現れる */
+  .play-content {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    visibility: hidden;
+  }
+  .play-app-icon {
+    position: absolute;
+    left: 50%;
+    top: 40.69%;          /* 293 / 720 */
+    width: 23.88%;        /* 96 / 402 */
+    transform: translateX(-50%);
+    display: block;
+    opacity: 0;
+    pointer-events: auto;
+    cursor: default; /* アイコンはタップしてもトップへ戻らない */
+  }
+  .play-links {
+    position: absolute;
+    left: 50%;
+    top: 56.94%;          /* 410 / 720 */
+    transform: translateX(-50%);
+    width: 42.79%;        /* 172 / 402 */
+    display: flex;
+    justify-content: space-between;
+    opacity: 0;
+  }
+  .play-links a {
+    display: block;
+    cursor: pointer;
+    pointer-events: auto;
+    transition: transform 0.15s ease;
+  }
+  .play-links a:hover { transform: translateY(-1px); }
+  .play-links a:active { transform: scale(0.96); }
+  .play-links a:focus-visible { outline: 2px solid #fff; outline-offset: 2px; border-radius: 6px; }
+  .play-links .btn-note     { width: 46.51%; } /* 80 / 172 */
+  .play-links .btn-appstore { width: 48.84%; } /* 84 / 172 */
+  .play-links img { display: block; width: 100%; height: auto; }
+
+  .play-frame.content-in .play-content { visibility: visible; }
+  .play-frame.content-in .play-app-icon { animation: content-pop 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .play-frame.content-in .play-links    { animation: content-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both; }
+  @keyframes content-pop {
+    from { opacity: 0; transform: translateX(-50%) scale(0.82); }
+    to   { opacity: 1; transform: translateX(-50%) scale(1); }
+  }
+  @keyframes content-rise {
+    from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .stage-curtain { display: none; }
+    .play-content { visibility: visible; }
+    .play-app-icon, .play-links { opacity: 1; animation: none !important; }
   }
 </style>
 </head>
@@ -223,6 +280,18 @@
     <img class="play-img" src="assets/img/play-theater.webp?v=2" alt="Shih TingFang Diner — Play: NOW SHOWING の劇場ステージ">
     <div class="stage-fx marquee-glow" aria-hidden="true"></div>
     <div class="stage-fx stage-spot" aria-hidden="true"></div>
+  </div>
+  <!-- スクリーンに映す内容: 幕が開ききってから現れる -->
+  <div class="play-content">
+    <img class="play-app-icon" src="assets/img/play-app-icon.svg?v=1" alt="ホイシャッター アプリアイコン">
+    <div class="play-links">
+      <a class="btn-note" href="https://note.com/sheepshih/m/m0df3cd205783" target="_blank" rel="noopener" aria-label="noteで読む">
+        <img src="assets/img/play-btn-note.svg?v=1" alt="note">
+      </a>
+      <a class="btn-appstore" href="https://apps.apple.com/jp/app/%E3%83%9B%E3%82%A4%E3%82%B7%E3%83%A3%E3%83%83%E3%82%BF%E3%83%BC/id6813088863" target="_blank" rel="noopener" aria-label="App Storeからダウンロード">
+        <img src="assets/img/play-btn-appstore.svg?v=1" alt="App Storeからダウンロード">
+      </a>
+    </div>
   </div>
   <div class="stage-curtain left" aria-hidden="true"></div>
   <div class="stage-curtain right" aria-hidden="true"></div>
@@ -397,6 +466,7 @@
       sceneImg.style.filter = "";
       spot.style.transition = "opacity 1.2s ease";
       spot.style.opacity = 0;
+      frame.classList.add("content-in"); // 幕が開ききったら、スクリーンに内容を映す
     }
     function tick() {
       if (finished) return;
@@ -441,9 +511,14 @@
   }
   setTimeout(openCurtain, 4000); // 読み込みが遅くても幕が閉じたままにならないように
 
+  // シーンをタップするとトップへ戻る(スクリーンのアイコン・ボタンのタップは除く)
   var goHome = function () { window.location.href = "index.html"; };
-  frame.addEventListener("click", goHome);
+  frame.addEventListener("click", function (e) {
+    if (e.target.closest(".play-app-icon, .play-links")) return;
+    goHome();
+  });
   frame.addEventListener("keydown", function (e) {
+    if (e.target !== frame) return; // ボタンにフォーカスがあるときのEnterはリンクを開く
     if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goHome(); }
   });
 })();
