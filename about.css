@@ -335,7 +335,7 @@ body {
   left: 8px;
   top: 1640px;
   width: 386px;
-  height: 706px;
+  height: 716px; /* 画像(772×1432)と同じ比率。上下が切れないように */
   object-fit: cover;
   mix-blend-mode: luminosity;
 }
