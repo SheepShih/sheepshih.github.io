@@ -201,6 +201,28 @@ body.page-leave .phone-frame {
   font-size: 16px;
 }
 
+/* 開くとき: ハンバーガーが開くのと同時に、各項目がハンバーガーの中心から
+   飛び出して今の位置まで広がる(--from-x/--from-y は script.js が測って設定) */
+.menu-list li { display: block; }
+.menu-overlay.open .menu-list li {
+  animation: menu-burst 0.6s cubic-bezier(0.22, 1.25, 0.36, 1) both;
+  animation-delay: calc(var(--i, 0) * 0.06s);
+}
+@keyframes menu-burst {
+  0% {
+    opacity: 0;
+    transform: translate(var(--from-x, 0px), var(--from-y, 0px)) scale(0.2);
+  }
+  35% { opacity: 1; }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .menu-overlay.open .menu-list li { animation: none; }
+}
+
 /* ---------- スクロール案内 ---------- */
 .scroll-hint {
   position: absolute;

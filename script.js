@@ -47,8 +47,22 @@
     burger.setAttribute("aria-label", "メニューを開く");
   }
 
+  // 各メニュー項目からハンバーガー中心までの距離を測り、飛び出す起点にする
+  function setBurstOrigins() {
+    const b = burger.getBoundingClientRect();
+    const bx = b.left + b.width / 2;
+    const by = b.top + b.height / 2;
+    overlay.querySelectorAll(".menu-list li").forEach((li, i) => {
+      const r = li.getBoundingClientRect();
+      li.style.setProperty("--from-x", (bx - (r.left + r.width / 2)) + "px");
+      li.style.setProperty("--from-y", (by - (r.top + r.height / 2)) + "px");
+      li.style.setProperty("--i", i);
+    });
+  }
+
   if (burger && overlay) {
     burger.addEventListener("click", () => {
+      if (!overlay.classList.contains("open")) setBurstOrigins();
       const open = overlay.classList.toggle("open");
       stage.classList.toggle("menu-open", open);
       overlay.setAttribute("aria-hidden", String(!open));
