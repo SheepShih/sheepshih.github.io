@@ -219,8 +219,28 @@ body.page-leave .phone-frame {
     transform: translate(0, 0) scale(1);
   }
 }
+/* 閉じるとき: 開くときの逆。下の項目から順にハンバーガーの中心へ吸い込まれ、
+   全部吸い込まれてから背景が消える(終わったら script.js が .open を外す) */
+/* 吸い込まれた後、背景がフェードアウトする間に項目が元の位置に戻って見えないように */
+.menu-overlay:not(.open) .menu-list li { opacity: 0; }
+.menu-overlay.open.closing .menu-list li {
+  animation: menu-suck 0.45s cubic-bezier(0.64, 0, 0.78, 0) both;
+  animation-delay: calc((3 - var(--i, 0)) * 0.05s);
+}
+@keyframes menu-suck {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  65% { opacity: 1; }
+  100% {
+    opacity: 0;
+    transform: translate(var(--from-x, 0px), var(--from-y, 0px)) scale(0.2);
+  }
+}
 @media (prefers-reduced-motion: reduce) {
-  .menu-overlay.open .menu-list li { animation: none; }
+  .menu-overlay.open .menu-list li,
+  .menu-overlay.open.closing .menu-list li { animation: none; }
 }
 
 /* ---------- スクロール案内 ---------- */

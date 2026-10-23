@@ -38,13 +38,27 @@
   const burger = document.getElementById("hamburgerMenu");
   const overlay = document.getElementById("menuOverlay");
 
-  function closeMenu() {
-    if (!overlay || !overlay.classList.contains("open")) return;
-    overlay.classList.remove("open");
-    stage.classList.remove("menu-open");
+  // 閉じるときは開くときの逆: ハンバーガーが閉じるのと同時に、
+  // 各項目が下の項目から順にハンバーガーの中心へ吸い込まれてから消える
+  const CLOSE_MS = 450 + 3 * 50; // 吸い込み0.45s + 時間差(css と合わせる)
+  let closeTimer = null;
+  function closeMenu(instant) {
+    if (!overlay || !overlay.classList.contains("open") || overlay.classList.contains("closing")) return;
+    stage.classList.remove("menu-open"); // ハンバーガーはすぐ閉じる
     overlay.setAttribute("aria-hidden", "true");
     burger.setAttribute("aria-expanded", "false");
     burger.setAttribute("aria-label", "メニューを開く");
+    const finish = () => {
+      overlay.classList.remove("open", "closing");
+      closeTimer = null;
+    };
+    if (instant === true || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      finish();
+      return;
+    }
+    setBurstOrigins();
+    overlay.classList.add("closing");
+    closeTimer = setTimeout(finish, CLOSE_MS);
   }
 
   // 各メニュー項目からハンバーガー中心までの距離を測り、飛び出す起点にする
@@ -62,12 +76,20 @@
 
   if (burger && overlay) {
     burger.addEventListener("click", () => {
-      if (!overlay.classList.contains("open")) setBurstOrigins();
-      const open = overlay.classList.toggle("open");
-      stage.classList.toggle("menu-open", open);
-      overlay.setAttribute("aria-hidden", String(!open));
-      burger.setAttribute("aria-expanded", String(open));
-      burger.setAttribute("aria-label", open ? "メニューを閉じる" : "メニューを開く");
+      if (overlay.classList.contains("open") && !overlay.classList.contains("closing")) {
+        closeMenu();
+        return;
+      }
+      // 閉じる途中で押されたら、その場で開き直す
+      if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; }
+      overlay.classList.remove("open", "closing");
+      setBurstOrigins();
+      void overlay.offsetWidth; // アニメーションを最初から再生させる
+      overlay.classList.add("open");
+      stage.classList.add("menu-open");
+      overlay.setAttribute("aria-hidden", "false");
+      burger.setAttribute("aria-expanded", "true");
+      burger.setAttribute("aria-label", "メニューを閉じる");
     });
   }
 
