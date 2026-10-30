@@ -229,7 +229,7 @@
     display: block;
     opacity: 0;
     pointer-events: auto;
-    cursor: default; /* アイコンはタップしてもトップへ戻らない */
+    cursor: pointer; /* スクリーン内なのでタップで次の作品へ */
   }
   .play-links {
     position: absolute;
@@ -294,14 +294,14 @@
   /* ---------- 上映作品の切り替え(スクリーンを左右にスワイプ) ----------
      今の作品が光に消える(.proj-out) → フィルムのカウントダウン(.proj-leader)
      → 次の作品が短い尺で浮かび上がる(.proj-quick) */
-  .screen-zone { /* スワイプを受ける範囲(スクリーンと電球のあたり) */
+  .screen-zone { /* スワイプとタップを受ける範囲 = スクリーンの白い部分 */
     position: absolute;
-    left: 18%;
-    right: 18%;
-    top: 37%;
-    height: 32%;
+    left: 20.4%;
+    right: 20.4%;
+    top: 39.1%;
+    height: 23.3%;
     pointer-events: auto;
-    cursor: grab;
+    cursor: pointer;
   }
   .screen-zone, .play-app-icon, .play-links a {
     touch-action: pan-y;
@@ -329,14 +329,14 @@
   .film-leader {
     position: absolute;
     left: 50%;
-    top: 47.4%;
-    width: 33%;
+    top: 50.75%; /* スクリーンの中心 */
+    width: 28%;  /* スクリーンの高さに収まる大きさ */
     aspect-ratio: 1;
     transform: translate(-50%, -50%);
     border-radius: 50%;
     border: 2px solid rgba(50, 40, 35, 0.75);
     color: rgba(50, 40, 35, 0.85);
-    font-size: 54px;
+    font-size: 44px;
     line-height: 1;
     display: flex;
     align-items: center;
@@ -731,10 +731,11 @@
     if (swiped) { swiped = false; e.preventDefault(); e.stopPropagation(); }
   }, true);
 
-  // シーンをタップするとトップへ戻る(スクリーンまわりのタップは除く)
+  // スクリーン内のタップ = 次の作品へ / ボタンはリンク / それ以外のシーンはトップへ戻る
   var goHome = function () { window.location.href = "index.html"; };
   frame.addEventListener("click", function (e) {
-    if (e.target.closest(".screen-zone, .play-app-icon, .play-links")) return;
+    if (e.target.closest(".play-links")) return;
+    if (e.target.closest(".screen-zone, .play-app-icon")) { switchProject(1); return; }
     goHome();
   });
   frame.addEventListener("keydown", function (e) {
