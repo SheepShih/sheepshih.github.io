@@ -294,7 +294,16 @@
   /* ---------- 上映作品の切り替え(スクリーンを左右にスワイプ) ----------
      今の作品が光に消える(.proj-out) → フィルムのカウントダウン(.proj-leader)
      → 次の作品が短い尺で浮かび上がる(.proj-quick) */
-  .screen-zone { /* スワイプとタップを受ける範囲 = スクリーンの白い部分 */
+  .screen-zone { /* スワイプを受ける範囲(スクリーンと電球のあたり) */
+    position: absolute;
+    left: 18%;
+    right: 18%;
+    top: 37%;
+    height: 32%;
+    pointer-events: auto;
+    cursor: grab;
+  }
+  .screen-tap { /* タップで切り替える範囲 = スクリーンの白い部分 */
     position: absolute;
     left: 20.4%;
     right: 20.4%;
@@ -303,7 +312,7 @@
     pointer-events: auto;
     cursor: pointer;
   }
-  .screen-zone, .play-app-icon, .play-links a {
+  .screen-zone, .screen-tap, .play-app-icon, .play-links a {
     touch-action: pan-y;
     -webkit-user-select: none;
     user-select: none;
@@ -412,6 +421,7 @@
   <!-- スクリーンに映す内容: 幕が開ききってから現れる -->
   <div class="play-content" id="playContent">
     <div class="screen-zone" aria-hidden="true"></div>
+    <div class="screen-tap" aria-hidden="true"></div>
     <img class="play-app-icon" id="playIcon" src="assets/img/play-app-icon.svg?v=1" alt="ホイシャッター アプリアイコン" draggable="false">
     <div class="play-links">
       <a class="btn-note" id="playNote" href="https://note.com/sheepshih/m/m0df3cd205783" target="_blank" rel="noopener" aria-label="noteで読む" draggable="false">
@@ -708,10 +718,10 @@
 
   // スクリーンを左右にスワイプ: 左へ=次の作品 / 右へ=前の作品
   var SWIPE_MIN = 40, startX = null, startY = 0, swiped = false;
+  frame.addEventListener("pointerdown", function () { swiped = false; }); // 新しい操作の始まり
   content.addEventListener("pointerdown", function (e) {
     startX = e.clientX;
     startY = e.clientY;
-    swiped = false;
   });
   window.addEventListener("pointerup", function (e) {
     if (startX === null) return;
@@ -734,8 +744,8 @@
   // スクリーン内のタップ = 次の作品へ / ボタンはリンク / それ以外のシーンはトップへ戻る
   var goHome = function () { window.location.href = "index.html"; };
   frame.addEventListener("click", function (e) {
-    if (e.target.closest(".play-links")) return;
-    if (e.target.closest(".screen-zone, .play-app-icon")) { switchProject(1); return; }
+    if (e.target.closest(".play-links, .screen-zone")) return;
+    if (e.target.closest(".screen-tap, .play-app-icon")) { switchProject(1); return; }
     goHome();
   });
   frame.addEventListener("keydown", function (e) {
