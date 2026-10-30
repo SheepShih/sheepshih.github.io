@@ -294,14 +294,14 @@
   /* ---------- 上映作品の切り替え(スクリーンを左右にスワイプ) ----------
      今の作品が光に消える(.proj-out) → フィルムのカウントダウン(.proj-leader)
      → 次の作品が短い尺で浮かび上がる(.proj-quick) */
-  .screen-zone { /* スワイプを受ける範囲(スクリーンと電球のあたり) */
+  .screen-zone { /* スクリーンのすぐ外側: タップが少しずれてもトップへ戻らないための余白 */
     position: absolute;
     left: 18%;
     right: 18%;
     top: 37%;
     height: 32%;
     pointer-events: auto;
-    cursor: grab;
+    cursor: default;
   }
   .screen-tap { /* タップで切り替える範囲 = スクリーンの白い部分 */
     position: absolute;
@@ -312,8 +312,9 @@
     pointer-events: auto;
     cursor: pointer;
   }
-  .screen-zone, .screen-tap, .play-app-icon, .play-links a {
-    touch-action: pan-y;
+  /* スワイプは画面全体で受ける。ブラウザの横スワイプやドラッグに取られないように */
+  html, body { touch-action: pan-y; }
+  body, .play-img, .play-app-icon, .play-links a {
     -webkit-user-select: none;
     user-select: none;
     -webkit-user-drag: none;
@@ -372,6 +373,12 @@
   .play-frame.proj-leader .film-leader { opacity: 1; }
   .play-frame.proj-leader .film-leader::after { animation: leader-sweep 0.38s linear both; }
   @keyframes leader-sweep { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+  /* 前の作品へ戻るときは、針が逆回りの巻き戻しになる */
+  .play-frame.proj-leader.proj-back .film-leader::after { animation-name: leader-sweep-back; }
+  @keyframes leader-sweep-back {
+    from { transform: scaleX(-1) rotate(0); }
+    to   { transform: scaleX(-1) rotate(360deg); }
+  }
 
   /* 今の上映作品を示す電球(作品の数だけ並ぶ) */
   .play-lights {
@@ -414,7 +421,7 @@
 
 <div class="play-frame" id="playFrame" role="link" tabindex="0" aria-label="トップへ戻る">
   <div class="stage-scene">
-    <img class="play-img" src="assets/img/play-theater.webp?v=2" alt="Shih TingFang Diner — Play: NOW SHOWING の劇場ステージ">
+    <img class="play-img" src="assets/img/play-theater.webp?v=2" alt="Shih TingFang Diner — Play: NOW SHOWING の劇場ステージ" draggable="false">
     <div class="stage-fx marquee-glow" aria-hidden="true"></div>
     <div class="stage-fx stage-spot" aria-hidden="true"></div>
   </div>
@@ -431,7 +438,7 @@
         <img src="assets/img/play-btn-appstore.svg?v=1" alt="App Storeからダウンロード" draggable="false">
       </a>
     </div>
-    <div class="film-leader" aria-hidden="true"><span>2</span></div>
+    <div class="film-leader" aria-hidden="true"><span id="leaderNum">2</span></div>
     <div class="play-lights" id="playLights" aria-hidden="true"></div>
   </div>
   <div class="stage-curtain left" aria-hidden="true"></div>
@@ -669,7 +676,6 @@
     }
   ];
   var current = 0, switching = false;
-  var content = document.getElementById("playContent");
   var iconEl = document.getElementById("playIcon");
   var noteEl = document.getElementById("playNote");
   var storeEl = document.getElementById("playStore");
@@ -704,6 +710,9 @@
     if (reduceMotion) { showProject(next); return; }
     if (!frame.classList.contains("content-in")) return; // 幕が開ききるまでは切り替えない
     switching = true;
+    // 次へ = 2 / 前へ = 3 に巻き戻す
+    document.getElementById("leaderNum").textContent = step < 0 ? "3" : "2";
+    frame.classList.toggle("proj-back", step < 0);
     frame.classList.add("proj-quick", "proj-out");     // 今の作品が光に消える
     setTimeout(function () {
       frame.classList.remove("proj-out");
@@ -716,10 +725,12 @@
     }, 220);
   }
 
-  // スクリーンを左右にスワイプ: 左へ=次の作品 / 右へ=前の作品
+  // 画面のどこでも左右にスワイプ: 左へ=次の作品 / 右へ=前の作品
+  // (PC幅の周りの装飾はドラッグで動かすので除く)
   var SWIPE_MIN = 40, startX = null, startY = 0, swiped = false;
-  frame.addEventListener("pointerdown", function () { swiped = false; }); // 新しい操作の始まり
-  content.addEventListener("pointerdown", function (e) {
+  document.addEventListener("pointerdown", function (e) {
+    swiped = false; // 新しい操作の始まり
+    if (e.target.closest && e.target.closest(".pc-deco")) { startX = null; return; }
     startX = e.clientX;
     startY = e.clientY;
   });
