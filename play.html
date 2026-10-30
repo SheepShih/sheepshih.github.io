@@ -414,18 +414,11 @@
     transform: translateX(-50%);
     padding-top: 30px;
     pointer-events: none;
-    opacity: 0;
     transition: opacity 0.4s ease;
   }
   @media (min-width: 431px) {
     .swipe-hint { display: block; }
   }
-  /* 枠の下に文字の入る余白がない高さの画面では、枠の下端の内側に出す */
-  @media (min-width: 431px) and (max-height: 877px) {
-    .swipe-hint { top: auto; bottom: 14px; padding-top: 0; }
-    .swipe-text { text-shadow: 0 1px 6px rgba(70, 20, 10, 0.85); }
-  }
-  .play-frame.content-in ~ .swipe-hint { opacity: 1; }
   .play-frame.has-switched ~ .swipe-hint { opacity: 0; }
   .swipe-text {
     margin: 0;
@@ -451,7 +444,6 @@
     .stage-curtain { display: none; }
     .play-content { visibility: visible; }
     .play-app-icon, .play-links, .play-lights { opacity: 1; animation: none !important; }
-    .swipe-hint { opacity: 1; }
     .swipe-text { animation: none; }
   }
 </style>
