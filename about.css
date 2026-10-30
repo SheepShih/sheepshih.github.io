@@ -138,6 +138,36 @@ body {
   white-space: nowrap;
 }
 
+/* トップの scroll と同じ案内文字。位置は about.html の fit() が枠に合わせて設定 */
+.about-scroll-hint {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+.about-scroll-hint.is-scrolled { opacity: 0; }
+.about-scroll-hint.inside { bottom: 14px; }
+.about-scroll-hint p {
+  margin: 0;
+  font-family: "Bentham", serif;
+  font-weight: 400;
+  font-size: 24px;
+  line-height: 1;
+  color: #fff;
+  letter-spacing: 1px;
+  animation: about-scroll-pulse 2s ease-in-out infinite;
+}
+.about-scroll-hint.inside p { color: var(--ink); } /* 新聞の上では黒文字に */
+@keyframes about-scroll-pulse {
+  0%, 100% { opacity: 1;    transform: translateY(0); }
+  50%      { opacity: 0.35; transform: translateY(6px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .about-scroll-hint p { animation: none; }
+}
+
 /* PC幅の装飾(.pc-deco / .deco-*)は共通の pc-deco.css で定義 */
 
 /* ---------- マストヘッド ---------- */

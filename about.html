@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bentham&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="about.css?v=51">
+<link rel="stylesheet" href="about.css?v=52">
 <link rel="stylesheet" href="pc-deco.css?v=46">
 </head>
 <body>
@@ -198,6 +198,8 @@
 </div>
 </div>
 
+<div class="about-scroll-hint" id="aboutScrollHint" aria-hidden="true"><p>scroll</p></div>
+
 <!-- PC幅のみの装飾は pc-deco.js が注入する(index/about共通) -->
 <script src="pc-deco.js?v=28"></script>
 
@@ -209,6 +211,7 @@
   const frame = document.getElementById("paperFrame");
   const wrap = document.getElementById("paperWrap");
   const paper = document.getElementById("paper");
+  const hint = document.getElementById("aboutScrollHint");
 
   // topページのドア画像と同じサイズの枠(幅×1376/768、画面中央)の中で
   // 新聞をスクロールさせる
@@ -221,11 +224,20 @@
     wrap.style.width = w + "px";
     wrap.style.height = (DESIGN_H * scale) + "px";
     paper.style.transform = "scale(" + scale + ")";
+    // 枠の下に文字の入る余白がない画面では、枠の下端の内側に出す
+    const room = (window.innerHeight - frameH) / 2;
+    hint.classList.toggle("inside", room < 54);
+    hint.style.top = room < 54 ? "" : (window.innerHeight + frameH) / 2 + 30 + "px";
   }
 
   window.addEventListener("resize", fit, { passive: true });
   window.addEventListener("orientationchange", fit, { passive: true });
   fit();
+
+  // 案内文字はトップの scroll と同じく、スクロールしたら消える
+  frame.addEventListener("scroll", () => {
+    hint.classList.toggle("is-scrolled", frame.scrollTop > 10);
+  }, { passive: true });
 
   // topへ戻るときは縮小フェードしてから遷移
   const backBtn = document.getElementById("backTopBtn");
