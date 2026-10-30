@@ -405,19 +405,15 @@
     background: #ffe9b8;
     box-shadow: 0 0 6px 2px rgba(255, 196, 110, 0.9);
   }
-  /* PC幅のみ: トップの scroll と同じ案内。切り替えたら消える */
+  /* トップの scroll と同じ案内。動きだけ左右に流れる。切り替えたら消える */
   .swipe-hint {
-    display: none;
     position: fixed;
     left: 50%;
-    top: calc(50% + 385px); /* 枠(高さ770px)のすぐ下 */
+    top: calc(50% + min(100vw, 430px) * 0.8958); /* 枠(幅×1376/768)のすぐ下 */
     transform: translateX(-50%);
     padding-top: 30px;
     pointer-events: none;
     transition: opacity 0.4s ease;
-  }
-  @media (min-width: 431px) {
-    .swipe-hint { display: block; }
   }
   .play-frame.has-switched ~ .swipe-hint { opacity: 0; }
   .swipe-text {
@@ -431,8 +427,8 @@
     animation: swipe-hint-pulse 2s ease-in-out infinite;
   }
   @keyframes swipe-hint-pulse {
-    0%, 100% { opacity: 1;    transform: translateY(0); }
-    50%      { opacity: 0.35; transform: translateY(6px); }
+    0%, 100% { opacity: 1;    transform: translateX(0); }
+    50%      { opacity: 0.35; transform: translateX(-12px); }
   }
 
   /* App Store未公開の作品はボタンを押せない状態で表示 */
