@@ -710,8 +710,8 @@
     if (reduceMotion) { showProject(next); return; }
     if (!frame.classList.contains("content-in")) return; // 幕が開ききるまでは切り替えない
     switching = true;
-    // 次へ = 2 / 前へ = 1 (作品が増えたら見直す)
-    document.getElementById("leaderNum").textContent = step < 0 ? "1" : "2";
+    // カウントダウンには切り替わった先の作品番号を出す
+    document.getElementById("leaderNum").textContent = next + 1;
     frame.classList.toggle("proj-back", step < 0);
     frame.classList.add("proj-quick", "proj-out");     // 今の作品が光に消える
     setTimeout(function () {
