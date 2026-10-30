@@ -405,6 +405,38 @@
     background: #ffe9b8;
     box-shadow: 0 0 6px 2px rgba(255, 196, 110, 0.9);
   }
+  /* PC幅のみ: トップの scroll と同じ案内。切り替えたら消える */
+  .swipe-hint {
+    display: none;
+    position: fixed;
+    left: 50%;
+    top: calc(50% + 385px); /* 枠(高さ770px)のすぐ下 */
+    transform: translateX(-50%);
+    padding-top: 30px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  @media (min-width: 431px) {
+    .swipe-hint { display: block; }
+  }
+  .play-frame.content-in ~ .swipe-hint { opacity: 1; }
+  .play-frame.has-switched ~ .swipe-hint { opacity: 0; }
+  .swipe-text {
+    margin: 0;
+    font-family: "Bentham", serif;
+    font-weight: 400;
+    font-size: 24px;
+    line-height: 1;
+    color: #fff;
+    letter-spacing: 1px;
+    animation: swipe-hint-pulse 2s ease-in-out infinite;
+  }
+  @keyframes swipe-hint-pulse {
+    0%, 100% { opacity: 1;    transform: translateY(0); }
+    50%      { opacity: 0.35; transform: translateY(6px); }
+  }
+
   /* App Store未公開の作品はボタンを押せない状態で表示 */
   .play-links .btn-appstore.is-soon { opacity: 0.4; cursor: default; }
   .play-links .btn-appstore.is-soon:hover,
@@ -414,6 +446,8 @@
     .stage-curtain { display: none; }
     .play-content { visibility: visible; }
     .play-app-icon, .play-links, .play-lights { opacity: 1; animation: none !important; }
+    .swipe-hint { opacity: 1; }
+    .swipe-text { animation: none; }
   }
 </style>
 </head>
@@ -444,6 +478,8 @@
   <div class="stage-curtain left" aria-hidden="true"></div>
   <div class="stage-curtain right" aria-hidden="true"></div>
 </div>
+
+<div class="swipe-hint" aria-hidden="true"><p class="swipe-text">swipe</p></div>
 
 <!-- PC幅のみの装飾は pc-deco.js が注入する(index/about/works/play共通) -->
 <script src="pc-deco.js?v=28"></script>
@@ -707,8 +743,9 @@
   function switchProject(step) {
     if (switching || PROJECTS.length < 2) return;
     var next = (current + step + PROJECTS.length) % PROJECTS.length;
-    if (reduceMotion) { showProject(next); return; }
+    if (reduceMotion) { frame.classList.add("has-switched"); showProject(next); return; }
     if (!frame.classList.contains("content-in")) return; // 幕が開ききるまでは切り替えない
+    frame.classList.add("has-switched");
     switching = true;
     // カウントダウンには切り替わった先の作品番号を出す
     document.getElementById("leaderNum").textContent = next + 1;
