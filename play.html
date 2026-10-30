@@ -260,13 +260,13 @@
   .play-frame.content-in .play-content { visibility: visible; }
   .play-frame.content-in .play-app-icon {
     animation:
-      projector-in 1.6s ease-out both,
-      projector-flicker 3.2s steps(1, end) 1.6s infinite;
+      projector-in var(--in-dur, 1.6s) ease-out both,
+      projector-flicker 3.2s steps(1, end) var(--in-dur, 1.6s) infinite;
   }
   .play-frame.content-in .play-links {
     animation:
-      projector-in 1.6s ease-out 0.45s both,
-      projector-flicker 3.2s steps(1, end) 2.05s infinite;
+      projector-in var(--in-dur, 1.6s) ease-out var(--in-lag, 0.45s) both,
+      projector-flicker 3.2s steps(1, end) calc(var(--in-dur, 1.6s) + var(--in-lag, 0.45s)) infinite;
   }
   @keyframes projector-in {
     0%   { opacity: 0;    filter: blur(7px) brightness(2.4) contrast(0.55); }
@@ -291,10 +291,113 @@
     88%  { opacity: 1; }
   }
 
+  /* ---------- 上映作品の切り替え(スクリーンを左右にスワイプ) ----------
+     今の作品が光に消える(.proj-out) → フィルムのカウントダウン(.proj-leader)
+     → 次の作品が短い尺で浮かび上がる(.proj-quick) */
+  .screen-zone { /* スワイプを受ける範囲(スクリーンと電球のあたり) */
+    position: absolute;
+    left: 18%;
+    right: 18%;
+    top: 37%;
+    height: 32%;
+    pointer-events: auto;
+    cursor: grab;
+  }
+  .screen-zone, .play-app-icon, .play-links a {
+    touch-action: pan-y;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+  .play-frame.proj-quick { --in-dur: 0.55s; --in-lag: 0.1s; }
+  .play-frame.content-in.proj-out .play-app-icon,
+  .play-frame.content-in.proj-out .play-links {
+    animation: projector-out 0.22s ease-in both;
+  }
+  .play-frame.content-in.proj-leader .play-app-icon,
+  .play-frame.content-in.proj-leader .play-links {
+    animation: none;
+    opacity: 0;
+  }
+  @keyframes projector-out {
+    0%   { opacity: 1;    filter: none; }
+    30%  { opacity: 0.55; }
+    50%  { opacity: 0.85; }
+    100% { opacity: 0;    filter: blur(6px) brightness(2.2) contrast(0.6); }
+  }
+  /* 映写フィルムの頭に付くカウントダウン */
+  .film-leader {
+    position: absolute;
+    left: 50%;
+    top: 47.4%;
+    width: 33%;
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border: 2px solid rgba(50, 40, 35, 0.75);
+    color: rgba(50, 40, 35, 0.85);
+    font-size: 54px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    overflow: hidden;
+    background:
+      linear-gradient(rgba(50, 40, 35, 0.4), rgba(50, 40, 35, 0.4)) center / 100% 1px no-repeat,
+      linear-gradient(rgba(50, 40, 35, 0.4), rgba(50, 40, 35, 0.4)) center / 1px 100% no-repeat;
+  }
+  .film-leader::before { /* 内側の円 */
+    content: "";
+    position: absolute;
+    inset: 9%;
+    border-radius: 50%;
+    border: 1px solid rgba(50, 40, 35, 0.5);
+  }
+  .film-leader::after { /* ぐるっと回る針 */
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: conic-gradient(from 0deg, rgba(50, 40, 35, 0.32), transparent 22%);
+  }
+  .play-frame.proj-leader .film-leader { opacity: 1; }
+  .play-frame.proj-leader .film-leader::after { animation: leader-sweep 0.38s linear both; }
+  @keyframes leader-sweep { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+
+  /* 今の上映作品を示す電球(作品の数だけ並ぶ) */
+  .play-lights {
+    position: absolute;
+    left: 50%;
+    top: 65.6%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 12px;
+    opacity: 0;
+    transition: opacity 0.6s ease 0.4s;
+  }
+  .play-frame.content-in .play-lights { opacity: 1; }
+  .play-lights i {
+    display: block;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #6d5a4c;
+    box-shadow: inset 0 0 0 1px rgba(255, 225, 180, 0.3);
+    transition: background 0.3s ease, box-shadow 0.3s ease;
+  }
+  .play-lights i.on {
+    background: #ffe9b8;
+    box-shadow: 0 0 6px 2px rgba(255, 196, 110, 0.9);
+  }
+  /* App Store未公開の作品はボタンを押せない状態で表示 */
+  .play-links .btn-appstore.is-soon { opacity: 0.4; cursor: default; }
+  .play-links .btn-appstore.is-soon:hover,
+  .play-links .btn-appstore.is-soon:active { transform: none; }
+
   @media (prefers-reduced-motion: reduce) {
     .stage-curtain { display: none; }
     .play-content { visibility: visible; }
-    .play-app-icon, .play-links { opacity: 1; animation: none !important; }
+    .play-app-icon, .play-links, .play-lights { opacity: 1; animation: none !important; }
   }
 </style>
 </head>
@@ -307,16 +410,19 @@
     <div class="stage-fx stage-spot" aria-hidden="true"></div>
   </div>
   <!-- スクリーンに映す内容: 幕が開ききってから現れる -->
-  <div class="play-content">
-    <img class="play-app-icon" src="assets/img/play-app-icon.svg?v=1" alt="ホイシャッター アプリアイコン">
+  <div class="play-content" id="playContent">
+    <div class="screen-zone" aria-hidden="true"></div>
+    <img class="play-app-icon" id="playIcon" src="assets/img/play-app-icon.svg?v=1" alt="ホイシャッター アプリアイコン" draggable="false">
     <div class="play-links">
-      <a class="btn-note" href="https://note.com/sheepshih/m/m0df3cd205783" target="_blank" rel="noopener" aria-label="noteで読む">
-        <img src="assets/img/play-btn-note.svg?v=1" alt="note">
+      <a class="btn-note" id="playNote" href="https://note.com/sheepshih/m/m0df3cd205783" target="_blank" rel="noopener" aria-label="noteで読む" draggable="false">
+        <img src="assets/img/play-btn-note.svg?v=1" alt="note" draggable="false">
       </a>
-      <a class="btn-appstore" href="https://apps.apple.com/jp/app/%E3%83%9B%E3%82%A4%E3%82%B7%E3%83%A3%E3%83%83%E3%82%BF%E3%83%BC/id6813088863" target="_blank" rel="noopener" aria-label="App Storeからダウンロード">
-        <img src="assets/img/play-btn-appstore.svg?v=1" alt="App Storeからダウンロード">
+      <a class="btn-appstore" id="playStore" href="https://apps.apple.com/jp/app/%E3%83%9B%E3%82%A4%E3%82%B7%E3%83%A3%E3%83%83%E3%82%BF%E3%83%BC/id6813088863" target="_blank" rel="noopener" aria-label="App Storeからダウンロード" draggable="false">
+        <img src="assets/img/play-btn-appstore.svg?v=1" alt="App Storeからダウンロード" draggable="false">
       </a>
     </div>
+    <div class="film-leader" aria-hidden="true"><span>2</span></div>
+    <div class="play-lights" id="playLights" aria-hidden="true"></div>
   </div>
   <div class="stage-curtain left" aria-hidden="true"></div>
   <div class="stage-curtain right" aria-hidden="true"></div>
@@ -536,10 +642,99 @@
   }
   setTimeout(openCurtain, 4000); // 読み込みが遅くても幕が閉じたままにならないように
 
-  // シーンをタップするとトップへ戻る(スクリーンのアイコン・ボタンのタップは除く)
+  // ---------- 上映作品の切り替え ----------
+  // 作品を増やすときはここに足すだけ。appStore が空の間はボタンを押せない状態で表示する
+  var PROJECTS = [
+    {
+      name: "ホイシャッター",
+      icon: "assets/img/play-app-icon.svg?v=1",
+      note: "https://note.com/sheepshih/m/m0df3cd205783",
+      appStore: "https://apps.apple.com/jp/app/%E3%83%9B%E3%82%A4%E3%82%B7%E3%83%A3%E3%83%83%E3%82%BF%E3%83%BC/id6813088863"
+    },
+    {
+      name: "Score Up 990",
+      icon: "assets/img/play-app-icon-scoreup.webp?v=1",
+      note: "https://note.com/sheepshih/m/m0d1c7e194ae7",
+      appStore: "" // App Store公開後にURLを入れる
+    }
+  ];
+  var current = 0, switching = false;
+  var content = document.getElementById("playContent");
+  var iconEl = document.getElementById("playIcon");
+  var noteEl = document.getElementById("playNote");
+  var storeEl = document.getElementById("playStore");
+  var lights = document.getElementById("playLights");
+
+  PROJECTS.forEach(function (p) { new Image().src = p.icon; lights.appendChild(document.createElement("i")); });
+
+  function showProject(i) {
+    var p = PROJECTS[i];
+    current = i;
+    iconEl.src = p.icon;
+    iconEl.alt = p.name + " アプリアイコン";
+    noteEl.href = p.note;
+    if (p.appStore) {
+      storeEl.href = p.appStore;
+      storeEl.classList.remove("is-soon");
+      storeEl.removeAttribute("aria-disabled");
+      storeEl.setAttribute("aria-label", "App Storeからダウンロード");
+    } else {
+      storeEl.removeAttribute("href");
+      storeEl.classList.add("is-soon");
+      storeEl.setAttribute("aria-disabled", "true");
+      storeEl.setAttribute("aria-label", "App Store 近日公開");
+    }
+    Array.prototype.forEach.call(lights.children, function (el, n) { el.classList.toggle("on", n === i); });
+  }
+  showProject(0);
+
+  function switchProject(step) {
+    if (switching || PROJECTS.length < 2) return;
+    var next = (current + step + PROJECTS.length) % PROJECTS.length;
+    if (reduceMotion) { showProject(next); return; }
+    if (!frame.classList.contains("content-in")) return; // 幕が開ききるまでは切り替えない
+    switching = true;
+    frame.classList.add("proj-quick", "proj-out");     // 今の作品が光に消える
+    setTimeout(function () {
+      frame.classList.remove("proj-out");
+      frame.classList.add("proj-leader");              // カウントダウン
+      setTimeout(function () {
+        showProject(next);
+        frame.classList.remove("proj-leader");         // 次の作品が浮かび上がる
+        setTimeout(function () { switching = false; }, 650);
+      }, 380);
+    }, 220);
+  }
+
+  // スクリーンを左右にスワイプ: 左へ=次の作品 / 右へ=前の作品
+  var SWIPE_MIN = 40, startX = null, startY = 0, swiped = false;
+  content.addEventListener("pointerdown", function (e) {
+    startX = e.clientX;
+    startY = e.clientY;
+    swiped = false;
+  });
+  window.addEventListener("pointerup", function (e) {
+    if (startX === null) return;
+    var dx = e.clientX - startX, dy = e.clientY - startY;
+    startX = null;
+    if (Math.abs(dx) < SWIPE_MIN || Math.abs(dx) < Math.abs(dy)) return;
+    swiped = true;
+    switchProject(dx < 0 ? 1 : -1);
+  });
+  window.addEventListener("pointercancel", function () { startX = null; });
+  window.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowLeft") switchProject(-1);
+    if (e.key === "ArrowRight") switchProject(1);
+  });
+  // スワイプの指を離したときの click でボタンやトップへの移動が動かないように
+  frame.addEventListener("click", function (e) {
+    if (swiped) { swiped = false; e.preventDefault(); e.stopPropagation(); }
+  }, true);
+
+  // シーンをタップするとトップへ戻る(スクリーンまわりのタップは除く)
   var goHome = function () { window.location.href = "index.html"; };
   frame.addEventListener("click", function (e) {
-    if (e.target.closest(".play-app-icon, .play-links")) return;
+    if (e.target.closest(".screen-zone, .play-app-icon, .play-links")) return;
     goHome();
   });
   frame.addEventListener("keydown", function (e) {
