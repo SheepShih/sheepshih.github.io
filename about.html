@@ -240,13 +240,13 @@
   const backBtn = document.getElementById("backTopBtn");
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  // 案内文字はポスターの現像が終わってから出す
+  // 案内文字はポスターの現像が8割進んだら出す(現像は3秒なので2.4秒後)
   const showHint = () => hint.classList.add("ready");
   if (reduceMotion || !("IntersectionObserver" in window)) {
     showHint();
   } else {
-    document.querySelector(".poster").addEventListener("transitionend", (e) => {
-      if (e.propertyName === "opacity" && e.target.classList.contains("developed")) showHint();
+    document.querySelector(".poster").addEventListener("transitionstart", (e) => {
+      if (e.propertyName === "opacity") setTimeout(showHint, 3000 * 0.8);
     });
     setTimeout(showHint, 6000); // 万一アニメが終わらなくても出す
   }
