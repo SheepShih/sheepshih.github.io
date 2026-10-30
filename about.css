@@ -145,9 +145,11 @@ body {
   transform: translateX(-50%);
   z-index: 5;
   pointer-events: none;
+  opacity: 0; /* ポスターの現像が終わってから出す */
   transition: opacity 0.4s ease;
 }
-.about-scroll-hint.is-scrolled { opacity: 0; }
+.about-scroll-hint.ready { opacity: 1; }
+.about-scroll-hint.ready.is-scrolled { opacity: 0; }
 .about-scroll-hint p {
   margin: 0;
   font-family: "Bentham", serif;
@@ -156,14 +158,14 @@ body {
   line-height: 1;
   color: #fff;
   letter-spacing: 1px;
-  animation: about-scroll-pulse 2s ease-in-out infinite;
 }
+.about-scroll-hint.ready p { animation: about-scroll-pulse 2s ease-in-out infinite; }
 @keyframes about-scroll-pulse {
   0%, 100% { opacity: 1;    transform: translateY(0); }
   50%      { opacity: 0.35; transform: translateY(6px); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .about-scroll-hint p { animation: none; }
+  .about-scroll-hint.ready p { animation: none; }
 }
 
 /* PC幅の装飾(.pc-deco / .deco-*)は共通の pc-deco.css で定義 */
