@@ -1,6 +1,9 @@
 # Works の回転ダイヤルと暗号化 実装仕様
 
 Works (2022~) の電話のダイヤルを回して番号を入力し、正しければ中身を表示する。
+電話をタップするとシーンが1.8倍に拡大し、ダイヤルを回せるようになる。
+拡大中に外をタップすると元に戻る（Esc キーでも戻る）。
+今の中身は空で、正解しても CLOSED の札はそのまま。受話器の音だけが鳴る。
 
 - 画面と操作: `works-dial.js`、`works.html` の `.dial-*`
 - 画像: `dial-wheel.webp`（回る盤。楕円を円に直してある）、`dial-top.webp`（固定の紙と指止め）
@@ -24,7 +27,8 @@ Works (2022~) の電話のダイヤルを回して番号を入力し、正しけ
 | 指止めまでの角度 | `FIRST_TRAVEL` |
 | 戻る速さ | `RETURN_SPEED` |
 | 話し中の音 | `busyTone()` |
-| 札の位置 | `works.html` の `.works-sign` |
+| 拡大の大きさ | `works.html` の `.phone-zoom .works-scene` の `scale(1.8)` |
+| 電話のタップ範囲 | `works.html` の `.phone-tap` |
 
 ## 守りの強さ
 

@@ -63,11 +63,32 @@
 
   @media (prefers-reduced-motion: reduce) {
     .works-frame.melt-wait { opacity: 1; }
+    .works-scene { transition: none; }
   }
 
   /* ---------- 回転ダイヤル電話(パスワード入力) ----------
      写真の上に、回る盤(dial-wheel)→ 固定の紙と指止め(dial-top)を重ねる。
      位置は写真(1116×2000)に対する割合 */
+  /* 電話をタップするとシーン全体がダイヤルを中心に拡大する */
+  .works-scene {
+    position: absolute;
+    inset: 0;
+    transform-origin: 50% 67.6%;
+    transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .works-frame.phone-zoom .works-scene { transform: scale(1.8); }
+  .phone-tap { /* 電話全体。拡大前はここのタップで拡大する */
+    position: absolute;
+    left: 32%;
+    top: 60%;
+    width: 37%;
+    height: 17.5%;
+    pointer-events: auto;
+    cursor: zoom-in;
+  }
+  .works-frame.phone-zoom { cursor: zoom-out; }
+  .works-frame.phone-zoom .phone-tap { cursor: inherit; }
+  .works-frame:not(.phone-zoom) .dial-hit { pointer-events: none; }
   .dial-layer { position: absolute; inset: 0; pointer-events: none; }
   .works-frame.melt-wait .dial-layer,
   .works-frame.melting .dial-layer { visibility: hidden; }
@@ -134,41 +155,21 @@
     overflow: hidden;
     clip-path: inset(50%);
   }
-  /* 正しい番号が入ると出る札。中身の文言は暗号化されている */
-  .works-sign {
-    position: absolute;
-    left: 56.4%;
-    top: 42.9%;
-    width: 16.4%;
-    height: 6.2%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #efe9dc;
-    color: #2b2320;
-    font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
-    font-size: calc(min(100vw, 430px) * 0.04);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.45);
-    transform: rotate(-3deg);
-    transform-origin: 50% 0;
-    animation: sign-flip 0.7s ease-out both;
-  }
-  @keyframes sign-flip {
-    from { opacity: 0; transform: rotate(-3deg) rotateX(-85deg); }
-    to   { opacity: 1; transform: rotate(-3deg) rotateX(0); }
-  }
 </style>
 </head>
 <body>
 
 <div class="works-frame melt-wait" id="worksFrame" role="link" tabindex="0" aria-label="トップへ戻る">
+  <div class="works-scene">
   <img class="works-img" src="assets/img/works-closed.webp?v=4" alt="Shih TingFang Diner — Works (2022~) 赤いダイヤル電話">
   <div class="dial-layer">
+    <div class="phone-tap" id="phoneTap"></div>
     <div class="dial-box"><img class="dial-wheel" id="dialWheel" src="assets/img/dial-wheel.webp?v=1" alt="" draggable="false"></div>
     <img class="dial-top" src="assets/img/dial-top.webp?v=1" alt="" draggable="false">
     <div class="dial-dots" id="dialDots" aria-hidden="true"></div>
     <div class="dial-hit" id="dialHit" role="application" aria-label="番号を回して入力するダイヤル。キーボードの数字でも入力できます"></div>
     <div class="dial-status" id="dialStatus" aria-live="polite"></div>
+  </div>
   </div>
   <div id="worksSecret"></div>
 </div>
@@ -322,15 +323,19 @@
   document.addEventListener("pointerdown", function (e) {
     fromDial = !!(e.target.closest && e.target.closest(".dial-hit"));
   });
-  frame.addEventListener("click", function () {
+  frame.addEventListener("click", function (e) {
     if (fromDial) { fromDial = false; return; }
+    // 電話をタップで拡大、拡大中は外をタップで元に戻す
+    if (frame.classList.contains("phone-zoom")) { frame.classList.remove("phone-zoom"); return; }
+    if (e.target.closest(".phone-tap")) { frame.classList.add("phone-zoom"); return; }
     goHome();
   });
   frame.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") { frame.classList.remove("phone-zoom"); return; }
     if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goHome(); }
   });
 })();
 </script>
-<script src="works-dial.js?v=1"></script>
+<script src="works-dial.js?v=2"></script>
 </body>
 </html>
