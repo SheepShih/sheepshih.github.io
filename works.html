@@ -51,11 +51,13 @@
   /* 切替時の「溶ける」登場エフェクト: 歪ませたシーンがドロッと固まっていく。
      歪みと透明度はJSが同じ時計で動かす。準備ができるまでは薄くして待つ */
   .works-frame.melt-wait { opacity: 0.15; }
-  .works-frame.melting { filter: url(#meltFilter); }
+  /* フィルターは枠の中の画像にかける。枠にかけると、はみ出た歪みの跡が
+     Mac の Safari で枠の外に残ることがある(画像なら枠の overflow で切れる) */
+  .works-frame.melting .works-img { filter: url(#meltFilter); }
 
   @media (prefers-reduced-motion: reduce) {
     .works-frame.melt-wait { opacity: 1; }
-    .works-frame.melting { filter: none; }
+    .works-frame.melting .works-img { filter: none; }
   }
 </style>
 </head>
@@ -91,13 +93,25 @@
   var img = frame.querySelector(".works-img");
   var turb = document.getElementById("meltTurb");
   var map = document.getElementById("meltMap");
-  var run = 0;
+  var run = 0, tick = false;
 
   function applyMelt(p) {
     var e = 1 - Math.pow(1 - p, 4); // 終盤で急速に収束
     map.setAttribute("scale", (190 * (1 - e)).toFixed(1));
     turb.setAttribute("baseFrequency", "0.009 " + (0.03 - 0.024 * e).toFixed(4));
     frame.style.opacity = p < 0.35 ? (0.15 + 0.85 * (p / 0.35)).toFixed(3) : "";
+    // Safari はフィルターの属性を変えただけでは描き直さないことがあるので、毎コマ促す
+    tick = !tick;
+    img.style.filter = "url(#meltFilter)" + (tick ? " brightness(1)" : "");
+  }
+
+  function endMelt() {
+    img.style.filter = "";
+    frame.classList.remove("melting");
+    // 歪んだ描画が残らないよう、画像を確実に描き直す
+    img.style.visibility = "hidden";
+    void img.offsetWidth;
+    img.style.visibility = "";
   }
 
   function startMelt() {
@@ -114,7 +128,7 @@
       var p = Math.min(1, elapsed / DUR);
       applyMelt(p);
       if (p < 1) requestAnimationFrame(step);
-      else frame.classList.remove("melting");
+      else endMelt();
     }
     requestAnimationFrame(function () { requestAnimationFrame(step); });
   }

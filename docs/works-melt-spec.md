@@ -7,7 +7,8 @@
 ## 仕組み
 
 - SVGフィルター `#meltFilter`（`feTurbulence` + `feDisplacementMap`）を、
-  `.works-frame.melting` の CSS `filter` で適用する。
+  `.works-frame.melting .works-img` の CSS `filter` で適用する。
+  枠ではなく画像にかけること（枠にかけると Mac の Safari で枠の外に跡が残った）。
 - 歪み量・ノイズ・透明度は、`requestAnimationFrame` の1本の時計で JS が毎フレーム設定する。
   SMIL と CSS アニメーションは使わない（別々の時計だと、重いスマホでズレたり、
   見えないうちに終わったりするため）。
@@ -39,6 +40,7 @@ HTMLの初期状態: .works-frame.melt-wait（opacity 0.15）
   1フレームが重い環境でも最大14フレームで必ず終わる（止まった分を捨てる方式にしないこと）。
 - `pageshow` の `persisted` で、ブラウザの「戻る」での復元時も再生する。
 - 裏タブでは `requestAnimationFrame` が止まるので、表示されてから再生される。
+- Safari 向けに、毎フレーム `filter` の値を変えて描き直しを促し、終了時も画像を描き直す。
 - `prefers-reduced-motion: reduce` では演出せず、すぐ表示する。
 
 ## 調整する場所
