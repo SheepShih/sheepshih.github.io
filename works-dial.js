@@ -4,16 +4,16 @@
 (function () {
   var frame = document.getElementById("worksFrame");
   var hit = document.getElementById("dialHit");
-  var wheel = document.getElementById("dialWheel");
+  var box = document.getElementById("dialBox"); // 回る盤(表と裏)の入れ物
   var dots = document.getElementById("dialDots");
   var status = document.getElementById("dialStatus");
   var secret = document.getElementById("worksSecret");
 
   // 穴の角度(度。時計の3時が0で時計回りが正、楕円を円に戻した座標)。並びは 1,2,…,9,0
-  var HOLES = [-52, -77, -101, -131, -157, -186, -216, -253, -289, -322];
+  var HOLES = [-52, -82, -112, -142, -172, -202, -232, -262, -292, -322];
   var DIGITS = "1234567890";
   var FIRST_TRAVEL = 60; // 「1」を指止めまで回す角度。数字が1つ増えるごとに30度増える
-  var SQUASH = 0.654;    // ダイヤルの楕円の縦横比(CSSの scaleY と同じ値)
+  var SQUASH = 0.6625;    // ダイヤルの楕円の縦横比(CSSの scaleY と同じ値)
   var RETURN_SPEED = 420; // 戻る速さ(度/秒)
 
   var digitsNeeded = 8;
@@ -39,7 +39,7 @@
 
   function setRotation(deg) {
     rotation = deg;
-    wheel.style.setProperty("--dial-rot", deg + "deg");
+    box.style.setProperty("--dial-rot", deg + "deg");
   }
 
   // ---------- 音(WebAudioで合成。最初の操作で鳴らせるようになる) ----------
@@ -148,7 +148,7 @@
 
   // ---------- 指で回す ----------
   function polar(e) {
-    var r = wheel.parentNode.getBoundingClientRect();
+    var r = box.getBoundingClientRect();
     var nx = (e.clientX - (r.left + r.width / 2)) / (r.width / 2);
     var ny = (e.clientY - (r.top + r.height / 2)) / (r.width / 2 * SQUASH);
     return { r: Math.sqrt(nx * nx + ny * ny), a: Math.atan2(ny, nx) * 180 / Math.PI };
