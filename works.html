@@ -48,19 +48,14 @@
     object-fit: cover;
   }
 
-  /* 切替時の「溶ける」登場エフェクト: 歪ませたシーンがドロッと固まっていく */
-  .works-frame.melting {
-    filter: url(#meltFilter);
-    animation: melt-fade 1.4s ease both;
-  }
-  @keyframes melt-fade {
-    0%   { opacity: 0.15; }
-    35%  { opacity: 1; }
-    100% { opacity: 1; }
-  }
+  /* 切替時の「溶ける」登場エフェクト: 歪ませたシーンがドロッと固まっていく。
+     歪みと透明度はJSが同じ時計で動かす。準備ができるまでは薄くして待つ */
+  .works-frame.melt-wait { opacity: 0.15; }
+  .works-frame.melting { filter: url(#meltFilter); }
 
   @media (prefers-reduced-motion: reduce) {
-    .works-frame.melting { filter: none; animation: none; }
+    .works-frame.melt-wait { opacity: 1; }
+    .works-frame.melting { filter: none; }
   }
 </style>
 </head>
@@ -70,22 +65,14 @@
 <svg class="melt-defs" width="0" height="0" aria-hidden="true" focusable="false">
   <defs>
     <filter id="meltFilter" x="-15%" y="-15%" width="130%" height="150%" color-interpolation-filters="sRGB">
-      <feTurbulence type="fractalNoise" baseFrequency="0.009 0.006" numOctaves="2" seed="6" result="turb">
-        <animate id="meltFreq" attributeName="baseFrequency" dur="1.4s" keyTimes="0;1"
-                 values="0.009 0.03; 0.009 0.006" fill="freeze" begin="indefinite"
-                 calcMode="spline" keySplines="0.16 1 0.3 1"/>
-      </feTurbulence>
-      <feDisplacementMap in="SourceGraphic" in2="turb" scale="0"
-                         xChannelSelector="R" yChannelSelector="G">
-        <animate id="meltScale" attributeName="scale" dur="1.4s" keyTimes="0;1"
-                 values="190;0" fill="freeze" begin="indefinite"
-                 calcMode="spline" keySplines="0.16 1 0.3 1"/>
-      </feDisplacementMap>
+      <feTurbulence id="meltTurb" type="fractalNoise" baseFrequency="0.009 0.03" numOctaves="2" seed="6" result="turb"/>
+      <feDisplacementMap id="meltMap" in="SourceGraphic" in2="turb" scale="190"
+                         xChannelSelector="R" yChannelSelector="G"/>
     </filter>
   </defs>
 </svg>
 
-<div class="works-frame" id="worksFrame" role="link" tabindex="0" aria-label="トップへ戻る">
+<div class="works-frame melt-wait" id="worksFrame" role="link" tabindex="0" aria-label="トップへ戻る">
   <img class="works-img" src="assets/img/works-closed.webp?v=4" alt="Shih TingFang Diner — Works (2022~) は準備中です">
 </div>
 
@@ -96,24 +83,56 @@
 (function () {
   var frame = document.getElementById("worksFrame");
 
-  // 登場時に「溶ける」エフェクトを再生。画像が用意できてから、CSSアニメと
-  // SVGアニメ(ディスプレイスメント)を同時に開始する。終わったらフィルターを外す。
+  // 登場時に「溶ける」エフェクトを再生する。
+  // 画像のデコードが終わり、実際に描画が始まってから1本の時計で動かす
+  // (読み込みが重いスマホでも、見えないうちに演出が終わらないように)
+  var DUR = 1400;
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var img = frame.querySelector(".works-img");
+  var turb = document.getElementById("meltTurb");
+  var map = document.getElementById("meltMap");
+  var run = 0;
+
+  function applyMelt(p) {
+    var e = 1 - Math.pow(1 - p, 4); // 終盤で急速に収束
+    map.setAttribute("scale", (190 * (1 - e)).toFixed(1));
+    turb.setAttribute("baseFrequency", "0.009 " + (0.03 - 0.024 * e).toFixed(4));
+    frame.style.opacity = p < 0.35 ? (0.15 + 0.85 * (p / 0.35)).toFixed(3) : "";
+  }
+
   function startMelt() {
+    var id = ++run, t0 = null, last = 0;
+    frame.classList.remove("melt-wait");
     frame.classList.add("melting");
-    var freq = document.getElementById("meltFreq");
-    var scale = document.getElementById("meltScale");
-    if (freq && freq.beginElement) { freq.beginElement(); }
-    if (scale && scale.beginElement) { scale.beginElement(); }
-    frame.addEventListener("animationend", function () {
-      frame.classList.remove("melting");
-    }, { once: true });
+    applyMelt(0);
+    function step(now) {
+      if (id !== run) return;
+      if (t0 === null) { t0 = now; last = now; }
+      if (now - last > 100) t0 += now - last; // 長く止まった分は進めない
+      last = now;
+      var p = Math.min(1, (now - t0) / DUR);
+      applyMelt(p);
+      if (p < 1) requestAnimationFrame(step);
+      else frame.classList.remove("melting");
+    }
+    requestAnimationFrame(function () { requestAnimationFrame(step); });
   }
-  if (!reduceMotion) {
-    if (img.complete && img.naturalWidth > 0) { startMelt(); }
-    else { img.addEventListener("load", startMelt, { once: true }); }
+
+  function whenReady() {
+    if (reduceMotion) { frame.classList.remove("melt-wait"); return; }
+    if (img.decode) { img.decode().then(startMelt, startMelt); }
+    else if (img.complete) { startMelt(); }
+    else {
+      img.addEventListener("load", startMelt, { once: true });
+      img.addEventListener("error", startMelt, { once: true });
+    }
   }
+  whenReady();
+
+  // ブラウザの「戻る」で保存状態から復元されたときも再生する
+  window.addEventListener("pageshow", function (e) {
+    if (e.persisted && !reduceMotion) startMelt();
+  });
 
   var goHome = function () { window.location.href = "index.html"; };
   frame.addEventListener("click", goHome);
