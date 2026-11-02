@@ -69,8 +69,7 @@
   /* ---------- 回転ダイヤル電話(パスワード入力) ----------
      写真の上に、穴を消した写真の盤(dial-bed)→ 穴の奥の影(dial-shadow、回る)→ 穴の縁(dial-rim、回る)
      → 穴の奥の壁(dial-wall)→ 固定の紙と指止め(dial-top)を重ねる。
-     縁と壁は形だけが回り、色は写真の光(dial-rim-tex)を画面に固定して使う。
-     壁は「穴の形」と「画面の下へずらした板の形」の重なりで、どの角度でも穴の上側に見える。
+     回る部分は works-dial.js が canvas に描く(ブラウザによる見え方の違いをなくすため)。
      位置は写真(1116×2000)に対する割合 */
   /* 電話をタップするとシーン全体がダイヤルを中心に拡大する */
   .works-scene {
@@ -103,38 +102,11 @@
     aspect-ratio: 1;
     transform: translateY(-50%);
   }
-  .dial-spin { /* 円を楕円につぶして回す */
+  .dial-canvas { /* 回る部分(影・穴の縁・穴の奥の壁)は works-dial.js が描く */
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
-    transform: scaleY(0.6625) rotate(var(--dial-rot, 0deg));
-  }
-  .dial-rim {
-    -webkit-mask: url(assets/img/dial-rim-mask.png?v=3) center / 100% 100% no-repeat;
-    mask: url(assets/img/dial-rim-mask.png?v=3) center / 100% 100% no-repeat;
-  }
-  .dial-wall {
-    -webkit-mask: url(assets/img/dial-hole-mask.png?v=1) center / 100% 100% no-repeat;
-    mask: url(assets/img/dial-hole-mask.png?v=1) center / 100% 100% no-repeat;
-  }
-  .dial-wall-plate { /* 画面の下へ 3.125%(盤の厚み)ずらした板 */
-    position: absolute;
-    inset: 0;
-    transform: rotate(calc(-1 * var(--dial-rot, 0deg))) scaleY(1.5094) translateY(3.125%) scaleY(0.6625) rotate(var(--dial-rot, 0deg));
-    -webkit-mask: url(assets/img/dial-plate-mask.png?v=1) center / 100% 100% no-repeat;
-    mask: url(assets/img/dial-plate-mask.png?v=1) center / 100% 100% no-repeat;
-  }
-  .dial-wall-plate .dial-rim-tex {
-    transform: rotate(calc(-1 * var(--dial-rot, 0deg))) scaleY(1.5094) translateY(-3.125%);
-    opacity: 0.75;
-  }
-  .dial-rim-tex { /* 親の回転とつぶしを打ち消して、画面に固定する */
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    transform: rotate(calc(-1 * var(--dial-rot, 0deg))) scaleY(1.5094);
   }
   .dial-bed {
     position: absolute;
@@ -201,9 +173,7 @@
     <div class="phone-tap" id="phoneTap"></div>
     <img class="dial-bed" src="assets/img/dial-bed.webp?v=4" alt="" draggable="false">
     <div class="dial-box" id="dialBox">
-      <img class="dial-spin" src="assets/img/dial-shadow.webp?v=3" alt="" draggable="false">
-      <div class="dial-spin dial-rim"><img class="dial-rim-tex" src="assets/img/dial-rim-tex.webp?v=1" alt="" draggable="false"></div>
-      <div class="dial-spin dial-wall"><div class="dial-wall-plate"><img class="dial-rim-tex" src="assets/img/dial-rim-tex.webp?v=1" alt="" draggable="false"></div></div>
+      <canvas class="dial-canvas" id="dialCanvas"></canvas>
     </div>
     <img class="dial-top" src="assets/img/dial-top.webp?v=2" alt="" draggable="false">
     <div class="dial-dots" id="dialDots" aria-hidden="true"></div>
@@ -376,6 +346,6 @@
   });
 })();
 </script>
-<script src="works-dial.js?v=8"></script>
+<script src="works-dial.js?v=10"></script>
 </body>
 </html>

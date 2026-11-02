@@ -8,6 +8,7 @@ Works (2022~) の電話のダイヤルを回して番号を入力し、正しけ
 - 画面と操作: `works-dial.js`、`works.html` の `.dial-*`
 - 画像: `dial-bed.webp`（写真の盤から穴だけを消した土台。外周の縁・厚み・紙のまわりは写真のまま）、`dial-shadow.webp`（穴の奥の影、回る）、`dial-rim-mask.png`（穴の縁と、穴の間の板の形。回るマスク。板は薄く光らせて、暗い穴との差を出す）、`dial-rim-tex.webp`（縁と壁の色。写真の光を画面に固定して使う）、`dial-hole-mask.png`・`dial-plate-mask.png`（穴の奥の壁。穴の形と、画面の下へずらした板の形の重なり）、`dial-top.webp`（固定の紙と指止め）
 - 回るのは穴の形だけで、光や厚みは回らないので、回しても二重にならない。穴は等間隔。盤の楕円は写真の盤の表面（中心 566,1355・半径 80×53）
+- 回る部分（影・縁・穴の奥の壁）は `works-dial.js` の `draw()` が canvas に描く。CSS のマスクと入れ子の変形では、iPhone の Safari で壁が穴の下側に出たため
 - `works-closed.webp` にも同じ盤を合成してある（溶ける演出の間も同じ見た目にするため）
 - 暗号文: `assets/works.enc.json`（AES-256-GCM、鍵は PBKDF2-SHA256 60万回）
 

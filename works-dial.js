@@ -4,7 +4,7 @@
 (function () {
   var frame = document.getElementById("worksFrame");
   var hit = document.getElementById("dialHit");
-  var box = document.getElementById("dialBox"); // 回る盤(表と裏)の入れ物
+  var box = document.getElementById("dialBox"); // 回る盤の枠(正方形。中心が楕円の中心)
   var dots = document.getElementById("dialDots");
   var status = document.getElementById("dialStatus");
   var secret = document.getElementById("worksSecret");
@@ -13,7 +13,7 @@
   var HOLES = [-52, -82, -112, -142, -172, -202, -232, -262, -292, -322];
   var DIGITS = "1234567890";
   var FIRST_TRAVEL = 60; // 「1」を指止めまで回す角度。数字が1つ増えるごとに30度増える
-  var SQUASH = 0.6625;    // ダイヤルの楕円の縦横比(CSSの scaleY と同じ値)
+  var SQUASH = 0.6625;    // ダイヤルの楕円の縦横比(写真の盤 80×53)
   var RETURN_SPEED = 420; // 戻る速さ(度/秒)
 
   var digitsNeeded = 8;
@@ -37,9 +37,60 @@
   }
   renderDots();
 
+  // ---------- 回る部分を描く ----------
+  // 形(マスク)だけが回り、色は写真の光(rimTex)を画面に固定して使う。
+  // 穴の奥の壁 = 穴の形 × 画面の下へ盤の厚みぶんずらした板の形 → どの角度でも穴の上側に見える
+  var canvas = document.getElementById("dialCanvas");
+  var dctx = canvas.getContext("2d");
+  var work = document.createElement("canvas");
+  var wctx = work.getContext("2d");
+  var THICK = 0.03125; // 盤の厚み(枠の幅に対する割合)
+  var IMG_V = "?v=4";
+  var imgs = {}, waiting = 0;
+  ["dial-shadow.webp", "dial-rim-mask.png", "dial-hole-mask.png", "dial-plate-mask.png", "dial-rim-tex.webp"].forEach(function (name) {
+    var im = new Image();
+    waiting++;
+    im.onload = function () { if (--waiting === 0) draw(); };
+    im.src = "assets/img/" + name + IMG_V;
+    imgs[name] = im;
+  });
+
+  function plate(c, im, n, dy, op) { // 盤の座標(円)の画像を、楕円につぶして回して描く
+    c.save();
+    if (op) c.globalCompositeOperation = op;
+    c.translate(n / 2, n / 2 + dy);
+    c.scale(1, SQUASH);
+    c.rotate(rotation * Math.PI / 180);
+    c.drawImage(im, -n / 2, -n / 2, n, n);
+    c.restore();
+  }
+  function textured(n) { // work に描いた形を、写真の光の色で塗る
+    wctx.globalCompositeOperation = "source-in";
+    wctx.drawImage(imgs["dial-rim-tex.webp"], 0, 0, n, n);
+    wctx.globalCompositeOperation = "source-over";
+  }
+  function draw() {
+    if (waiting) return;
+    var n = Math.min(1024, Math.round(box.offsetWidth * (window.devicePixelRatio || 1) * 2.4)); // 拡大時も粗くならない大きさ
+    if (canvas.width !== n) { canvas.width = canvas.height = work.width = work.height = n; }
+    dctx.clearRect(0, 0, n, n);
+    plate(dctx, imgs["dial-shadow.webp"], n, 0);
+    wctx.clearRect(0, 0, n, n);
+    plate(wctx, imgs["dial-rim-mask.png"], n, 0);
+    textured(n);
+    dctx.drawImage(work, 0, 0);
+    wctx.clearRect(0, 0, n, n);
+    plate(wctx, imgs["dial-hole-mask.png"], n, 0);
+    plate(wctx, imgs["dial-plate-mask.png"], n, n * THICK, "destination-in");
+    textured(n);
+    dctx.globalAlpha = 0.75;
+    dctx.drawImage(work, 0, 0);
+    dctx.globalAlpha = 1;
+  }
+
   function setRotation(deg) {
     rotation = deg;
-    box.style.setProperty("--dial-rot", deg + "deg");
+    draw();
   }
 
   // ---------- 音(WebAudioで合成。最初の操作で鳴らせるようになる) ----------
