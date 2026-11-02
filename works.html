@@ -49,30 +49,24 @@
   }
 
   /* 切替時の「溶ける」登場エフェクト: 歪ませたシーンがドロッと固まっていく。
-     歪みと透明度はJSが同じ時計で動かす。準備ができるまでは薄くして待つ */
+     演出中だけ canvas(WebGL)に歪ませた画像を描く。準備ができるまでは薄くして待つ */
   .works-frame.melt-wait { opacity: 0.15; }
-  /* フィルターは枠の中の画像にかける。枠にかけると、はみ出た歪みの跡が
-     Mac の Safari で枠の外に残ることがある(画像なら枠の overflow で切れる) */
-  .works-frame.melting .works-img { filter: url(#meltFilter); }
+  .works-gl {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+  }
+  .works-frame.melting .works-gl { display: block; }
+  .works-frame.melting .works-img { visibility: hidden; }
 
   @media (prefers-reduced-motion: reduce) {
     .works-frame.melt-wait { opacity: 1; }
-    .works-frame.melting .works-img { filter: none; }
   }
 </style>
 </head>
 <body>
-
-<!-- 「溶ける」用のSVGフィルター(タービュランス+ディスプレイスメント) -->
-<svg class="melt-defs" width="0" height="0" aria-hidden="true" focusable="false">
-  <defs>
-    <filter id="meltFilter" x="-15%" y="-15%" width="130%" height="150%" color-interpolation-filters="sRGB">
-      <feTurbulence id="meltTurb" type="fractalNoise" baseFrequency="0.009 0.03" numOctaves="2" seed="6" result="turb"/>
-      <feDisplacementMap id="meltMap" in="SourceGraphic" in2="turb" scale="190"
-                         xChannelSelector="R" yChannelSelector="G"/>
-    </filter>
-  </defs>
-</svg>
 
 <div class="works-frame melt-wait" id="worksFrame" role="link" tabindex="0" aria-label="トップへ戻る">
   <img class="works-img" src="assets/img/works-closed.webp?v=4" alt="Shih TingFang Diner — Works (2022~) は準備中です">
@@ -85,50 +79,122 @@
 (function () {
   var frame = document.getElementById("worksFrame");
 
-  // 登場時に「溶ける」エフェクトを再生する。
-  // 画像のデコードが終わり、実際に描画が始まってから1本の時計で動かす
-  // (読み込みが重いスマホでも、見えないうちに演出が終わらないように)
+  // 登場時に「溶ける」エフェクトを再生する。歪みはGPU(WebGL)で描くので
+  // 画面が大きくても軽い。画像のデコード後、実際に描画が始まってから1本の時計で動かす
   var DUR = 1400;
+  var MAX_SCALE = 190; // 歪みの強さ(px)
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var img = frame.querySelector(".works-img");
-  var turb = document.getElementById("meltTurb");
-  var map = document.getElementById("meltMap");
-  var run = 0, tick = false;
+  var melt = null; // WebGLが使えないときは null(ふわっと表示するだけ)
+  var run = 0;
+
+  var FRAG = [
+    "precision highp float;",
+    "uniform sampler2D tex;",
+    "uniform vec2 size;",  // 枠の大きさ(px)
+    "uniform vec2 freq;",  // ノイズの細かさ
+    "uniform float scale;",
+    "varying vec2 uv;",
+    "float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }",
+    "float noise(vec2 p) {",
+    "  vec2 i = floor(p), f = fract(p);",
+    "  f = f * f * (3.0 - 2.0 * f);",
+    "  return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x),",
+    "             mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);",
+    "}",
+    "float fbm(vec2 p) { return noise(p) * 0.65 + noise(p * 2.0 + 17.0) * 0.35; }",
+    "void main() {",
+    "  vec2 p = uv * size * freq;",
+    "  vec2 d = vec2(fbm(p + vec2(3.1, 7.7)), fbm(p + vec2(11.3, 2.9))) - 0.5;",
+    "  vec2 q = uv + d * scale / size;",
+    "  if (q.x < 0.0 || q.x > 1.0 || q.y < 0.0 || q.y > 1.0) discard;", // 外側は背景が見える
+    "  gl_FragColor = texture2D(tex, q);",
+    "}"
+  ].join("\n");
+  var VERT = [
+    "attribute vec2 pos;",
+    "varying vec2 uv;",
+    "void main() {",
+    "  uv = vec2(pos.x * 0.5 + 0.5, 0.5 - pos.y * 0.5);",
+    "  gl_Position = vec4(pos, 0.0, 1.0);",
+    "}"
+  ].join("\n");
+
+  function initMelt() {
+    var canvas = document.createElement("canvas");
+    canvas.className = "works-gl";
+    canvas.setAttribute("aria-hidden", "true");
+    var gl = canvas.getContext("webgl", { antialias: false });
+    if (!gl) return null;
+    function shader(type, src) {
+      var sh = gl.createShader(type);
+      gl.shaderSource(sh, src);
+      gl.compileShader(sh);
+      return gl.getShaderParameter(sh, gl.COMPILE_STATUS) ? sh : null;
+    }
+    var vs = shader(gl.VERTEX_SHADER, VERT), fs = shader(gl.FRAGMENT_SHADER, FRAG);
+    if (!vs || !fs) return null;
+    var prog = gl.createProgram();
+    gl.attachShader(prog, vs);
+    gl.attachShader(prog, fs);
+    gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return null;
+    gl.useProgram(prog);
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+    var loc = gl.getAttribLocation(prog, "pos");
+    gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+    frame.appendChild(canvas);
+    return {
+      gl: gl,
+      canvas: canvas,
+      size: gl.getUniformLocation(prog, "size"),
+      freq: gl.getUniformLocation(prog, "freq"),
+      scale: gl.getUniformLocation(prog, "scale")
+    };
+  }
 
   function applyMelt(p) {
     var e = 1 - Math.pow(1 - p, 4); // 終盤で急速に収束
-    map.setAttribute("scale", (190 * (1 - e)).toFixed(1));
-    turb.setAttribute("baseFrequency", "0.009 " + (0.03 - 0.024 * e).toFixed(4));
     frame.style.opacity = p < 0.35 ? (0.15 + 0.85 * (p / 0.35)).toFixed(3) : "";
-    // Safari はフィルターの属性を変えただけでは描き直さないことがあるので、毎コマ促す
-    tick = !tick;
-    img.style.filter = "url(#meltFilter)" + (tick ? " brightness(1)" : "");
-  }
-
-  function endMelt() {
-    img.style.filter = "";
-    frame.classList.remove("melting");
-    // 歪んだ描画が残らないよう、画像を確実に描き直す
-    img.style.visibility = "hidden";
-    void img.offsetWidth;
-    img.style.visibility = "";
+    if (!melt) return;
+    var gl = melt.gl, w = frame.clientWidth, h = frame.clientHeight;
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    melt.canvas.width = Math.round(w * dpr);
+    melt.canvas.height = Math.round(h * dpr);
+    gl.viewport(0, 0, melt.canvas.width, melt.canvas.height);
+    gl.uniform2f(melt.size, w, h);
+    gl.uniform2f(melt.freq, 0.009, 0.03 - 0.024 * e);
+    gl.uniform1f(melt.scale, MAX_SCALE * (1 - e));
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   }
 
   function startMelt() {
     var id = ++run, elapsed = 0, last = null;
-    frame.classList.remove("melt-wait");
-    frame.classList.add("melting");
+    if (melt === null) {
+      try { melt = initMelt(); } catch (err) { melt = null; }
+    }
     applyMelt(0);
+    frame.classList.remove("melt-wait");
+    if (melt) frame.classList.add("melting");
     function step(now) {
       if (id !== run) return;
-      // 1コマで進むのは最大100ms。読み込みで止まっても飛ばず、
-      // 描画が重い環境(Safariなど)でも必ず最後まで進む
+      // 1コマで進むのは最大100ms。読み込みで止まっても飛ばず、重い環境でも必ず最後まで進む
       if (last !== null) elapsed += Math.min(now - last, 100);
       last = now;
       var p = Math.min(1, elapsed / DUR);
       applyMelt(p);
       if (p < 1) requestAnimationFrame(step);
-      else endMelt();
+      else frame.classList.remove("melting");
     }
     requestAnimationFrame(function () { requestAnimationFrame(step); });
   }

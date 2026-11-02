@@ -6,21 +6,20 @@
 
 ## 仕組み
 
-- SVGフィルター `#meltFilter`（`feTurbulence` + `feDisplacementMap`）を、
-  `.works-frame.melting .works-img` の CSS `filter` で適用する。
-  枠ではなく画像にかけること（枠にかけると Mac の Safari で枠の外に跡が残った）。
-- 歪み量・ノイズ・透明度は、`requestAnimationFrame` の1本の時計で JS が毎フレーム設定する。
-  SMIL と CSS アニメーションは使わない（別々の時計だと、重いスマホでズレたり、
-  見えないうちに終わったりするため）。
+- 演出中だけ、`<img>` を隠して `canvas.works-gl`（WebGL）に歪ませた画像を描く。
+  歪みはフラグメントシェーダーの2層ノイズで計算するので、Retina でも GPU で軽く動く。
+- SVGフィルターは使わない（CPU処理で重く、Mac の Safari で描き残しも出たため）。
+- 歪み量・ノイズ・透明度は `requestAnimationFrame` の1本の時計で設定する。
+- WebGL が使えない環境では歪ませず、透明度のフェードだけを行う。
 
 ## 流れ
 
 ```
 HTMLの初期状態: .works-frame.melt-wait（opacity 0.15）
   └─ img.decode() 完了
-       └─ startMelt(): melt-wait を外し melting を付ける
+       └─ startMelt(): WebGLを準備して最初のコマを描き、melt-wait を外して melting を付ける
             └─ 2フレーム待ってから時計を開始（描画が始まってから動かす）
-                 └─ 1.4秒で歪み0へ → melting を外して通常描画へ
+                 └─ 1.4秒で歪み0へ → melting を外して <img> の表示に戻す
 ```
 
 ## 値
@@ -30,7 +29,7 @@ HTMLの初期状態: .works-frame.melt-wait（opacity 0.15）
 | 全体の長さ | `DUR = 1400`ms |
 | イージング | `1 - (1 - p)^4`（終盤で急速に収束） |
 | 歪み `scale` | `190 → 0` |
-| ノイズ `baseFrequency` の縦 | `0.03 → 0.006`（横は `0.009` 固定） |
+| ノイズの細かさの縦 | `0.03 → 0.006`（横は `0.009` 固定） |
 | 透明度 | `0.15 →(35%)→ 1` |
 
 ## 再生が飛ばないための処理
@@ -40,20 +39,14 @@ HTMLの初期状態: .works-frame.melt-wait（opacity 0.15）
   1フレームが重い環境でも最大14フレームで必ず終わる（止まった分を捨てる方式にしないこと）。
 - `pageshow` の `persisted` で、ブラウザの「戻る」での復元時も再生する。
 - 裏タブでは `requestAnimationFrame` が止まるので、表示されてから再生される。
-- Safari 向けに、毎フレーム `filter` の値を変えて描き直しを促し、終了時も画像を描き直す。
 - `prefers-reduced-motion: reduce` では演出せず、すぐ表示する。
 
 ## 調整する場所
 
 | やりたいこと | 変更箇所 |
 |---|---|
-| 溶けの強さ | `applyMelt()` の `190`（`#meltMap` の初期値も合わせる） |
+| 溶けの強さ | `MAX_SCALE` |
 | 速さ | `DUR` |
-| 波の細かさ | `applyMelt()` の `baseFrequency` の値 |
-| ノイズの形 | `#meltTurb` の `seed` |
+| 波の細かさ | `applyMelt()` の `melt.freq` の値 |
+| ノイズの重ね方 | シェーダーの `fbm()` |
 | 序盤の透け具合 | `applyMelt()` の `0.15` と `0.35` |
-
-## 注意
-
-- SVGフィルターは負荷が高いので、演出中だけ適用して終わったら外す。
-- 歪みが枠で切れるときは `#meltFilter` の `x / y / width / height` を広げる。
