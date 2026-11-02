@@ -67,13 +67,13 @@
   }
 
   /* ---------- 回転ダイヤル電話(パスワード入力) ----------
-     写真の上に、回る盤(dial-wheel)→ 固定の紙と指止め(dial-top)を重ねる。
+     写真の上に、土台と中央の紙(dial-bed)→ 回る盤(dial-wheel)→ 指止め(dial-needle)を重ねる。
      位置は写真(1116×2000)に対する割合 */
   /* 電話をタップするとシーン全体がダイヤルを中心に拡大する */
   .works-scene {
     position: absolute;
     inset: 0;
-    transform-origin: 50% 67.6%;
+    transform-origin: 50.72% 67.95%;
     transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
   }
   .works-frame.phone-zoom .works-scene { transform: scale(2.4); }
@@ -94,9 +94,9 @@
   .works-frame.melting .dial-layer { visibility: hidden; }
   .dial-box {
     position: absolute;
-    left: 44%;
-    top: 67.585%;
-    width: 12.06%;
+    left: 43.49%;
+    top: 67.95%;
+    width: 14.46%;
     aspect-ratio: 1;
     transform: translateY(-50%);
   }
@@ -104,19 +104,26 @@
     display: block;
     width: 100%;
     height: 100%;
-    transform: scaleY(0.762) rotate(var(--dial-rot, 0deg));
+    transform: scaleY(0.669) rotate(calc(-16deg + var(--dial-rot, 0deg)));
   }
-  .dial-top {
+  .dial-bed {
     position: absolute;
-    left: 37.63%;
-    top: 63%;
-    width: 26.88%;
-    height: 12%;
+    left: 42.11%;
+    top: 64.5%;
+    width: 17.92%;
+    height: 7%;
+  }
+  .dial-needle {
+    position: absolute;
+    left: 54.57%;
+    top: 67.9%;
+    width: 4.66%;
+    height: 0.99%;
   }
   .dial-dots { /* 中央の紙に、入力した桁数を表示 */
     position: absolute;
-    left: 50.78%;
-    top: 67.41%;
+    left: 50.72%;
+    top: 67.95%;
     transform: translate(-50%, -50%);
     display: flex;
     gap: 1px;
@@ -161,11 +168,12 @@
 
 <div class="works-frame melt-wait" id="worksFrame" role="link" tabindex="0" aria-label="トップへ戻る">
   <div class="works-scene">
-  <img class="works-img" src="assets/img/works-closed.webp?v=4" alt="Shih TingFang Diner — Works (2022~) 赤いダイヤル電話">
+  <img class="works-img" src="assets/img/works-closed.webp?v=5" alt="Shih TingFang Diner — Works (2022~) 赤いダイヤル電話">
   <div class="dial-layer">
     <div class="phone-tap" id="phoneTap"></div>
-    <div class="dial-box"><img class="dial-wheel" id="dialWheel" src="assets/img/dial-wheel.webp?v=1" alt="" draggable="false"></div>
-    <img class="dial-top" src="assets/img/dial-top.webp?v=1" alt="" draggable="false">
+    <img class="dial-bed" src="assets/img/dial-bed.webp?v=1" alt="" draggable="false">
+    <div class="dial-box"><img class="dial-wheel" id="dialWheel" src="assets/img/dial-wheel.webp?v=2" alt="" draggable="false"></div>
+    <img class="dial-needle" src="assets/img/dial-needle.webp?v=1" alt="" draggable="false">
     <div class="dial-dots" id="dialDots" aria-hidden="true"></div>
     <div class="dial-hit" id="dialHit" role="application" aria-label="番号を回して入力するダイヤル。キーボードの数字でも入力できます"></div>
     <div class="dial-status" id="dialStatus" aria-live="polite"></div>
@@ -336,6 +344,6 @@
   });
 })();
 </script>
-<script src="works-dial.js?v=2"></script>
+<script src="works-dial.js?v=3"></script>
 </body>
 </html>

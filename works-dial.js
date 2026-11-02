@@ -10,10 +10,10 @@
   var secret = document.getElementById("worksSecret");
 
   // 穴の角度(度。時計の3時が0で時計回りが正、楕円を円に戻した座標)。並びは 1,2,…,9,0
-  var HOLES = [-41, -71, -100, -130, -164, -198, -231, -262, -292, -321];
+  var HOLES = [-46, -76, -106, -136, -166, -196, -226, -256, -286, -316];
   var DIGITS = "1234567890";
   var FIRST_TRAVEL = 60; // 「1」を指止めまで回す角度。数字が1つ増えるごとに30度増える
-  var SQUASH = 0.762;    // ダイヤルの楕円の縦横比(CSSの scaleY と同じ値)
+  var SQUASH = 0.669;    // ダイヤルの楕円の縦横比(CSSの scaleY と同じ値)
   var RETURN_SPEED = 420; // 戻る速さ(度/秒)
 
   var digitsNeeded = 8;

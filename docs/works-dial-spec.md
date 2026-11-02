@@ -6,7 +6,8 @@ Works (2022~) の電話のダイヤルを回して番号を入力し、正しけ
 今の中身は空で、正解しても CLOSED の札はそのまま。受話器の音だけが鳴る。
 
 - 画面と操作: `works-dial.js`、`works.html` の `.dial-*`
-- 画像: `dial-wheel.webp`（回る盤。楕円を円に直してある）、`dial-top.webp`（固定の紙と指止め）
+- 画像: `dial-bed.webp`（古いダイヤルを隠す土台と中央の紙）、`dial-wheel.webp`（回る盤）、`dial-needle.webp`（指止め）
+- `works-closed.webp` にも同じ盤と指止めを合成してある（溶ける演出の間も同じ見た目にするため）
 - 暗号文: `assets/works.enc.json`（AES-256-GCM、鍵は PBKDF2-SHA256 60万回）
 
 番号はリポジトリに置かない。ページは入力された番号で復号を試し、成功したときだけ中身を表示する。
