@@ -136,9 +136,7 @@
     })["catch"](function () {
       busyTone();
       status.textContent = "番号が違います";
-      frame.classList.add("dial-wrong");
       setTimeout(function () {
-        frame.classList.remove("dial-wrong");
         entered = "";
         renderDots();
         locked = false;
