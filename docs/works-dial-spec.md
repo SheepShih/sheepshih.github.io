@@ -1,0 +1,32 @@
+# Works の回転ダイヤルと暗号化 実装仕様
+
+Works (2022~) の電話のダイヤルを回して番号を入力し、正しければ中身を表示する。
+
+- 画面と操作: `works-dial.js`、`works.html` の `.dial-*`
+- 画像: `dial-wheel.webp`（回る盤。楕円を円に直してある）、`dial-top.webp`（固定の紙と指止め）
+- 暗号文: `assets/works.enc.json`（AES-256-GCM、鍵は PBKDF2-SHA256 60万回）
+
+番号はリポジトリに置かない。ページは入力された番号で復号を試し、成功したときだけ中身を表示する。
+
+## 中身や番号を変えるとき
+
+1. `private/works-content.html`（git の対象外）を編集する。
+2. 暗号文を作り直す: `WORKS_PASS=番号 python3 tools/encrypt-works.py`（`cryptography` が必要）
+3. `works-dial.js` の `works.enc.json?v=` を上げる。
+
+`private/` はこのパソコンにしかない。消えた場合は中身を作り直す。
+
+## 調整する場所
+
+| やりたいこと | 変更箇所 |
+|---|---|
+| 穴の位置の判定 | `works-dial.js` の `HOLES` |
+| 指止めまでの角度 | `FIRST_TRAVEL` |
+| 戻る速さ | `RETURN_SPEED` |
+| 話し中の音 | `busyTone()` |
+| 札の位置 | `works.html` の `.works-sign` |
+
+## 守りの強さ
+
+8桁の数字は組み合わせが1億通りしかなく、暗号文は公開されているので、
+時間をかけた総当たりには耐えられない。守秘義務のある内容はここに置かない。
