@@ -160,6 +160,10 @@
     user-select: none;
   }
   .works-frame.dial-grabbing .dial-hit { cursor: grabbing; }
+  /* 正解すると店内(Works 2022~)に切り替わる。画像は暗号化された中身(#worksSecret)に入っている */
+  #worksSecret { display: none; }
+  .works-frame.opened .dial-layer { display: none; }
+  .works-frame.opened .works-scene { transform: none; transition: none; }
   .dial-status {
     position: absolute;
     width: 1px;
@@ -299,6 +303,8 @@
     var id = ++run, elapsed = 0, last = null;
     if (melt === null) {
       try { melt = initMelt(); } catch (err) { melt = null; }
+    } else if (melt) { // 画像が差し替わっていることがあるので読み込み直す
+      melt.gl.texImage2D(melt.gl.TEXTURE_2D, 0, melt.gl.RGBA, melt.gl.RGBA, melt.gl.UNSIGNED_BYTE, img);
     }
     applyMelt(0);
     frame.classList.remove("melt-wait");
@@ -332,6 +338,23 @@
     if (e.persisted && !reduceMotion) startMelt();
   });
 
+  // 番号が正解すると(works-dial.js)、復号した店内の画像に差し替えて同じエフェクトで切り替える
+  frame.addEventListener("works-unlocked", function () {
+    var open = document.querySelector("#worksSecret .works-open-img");
+    if (!open) return;
+    img.alt = open.alt;
+    img.src = open.src;
+    document.title = "Works (2022~) | Shih TingFang 施婷方 | Portfolio";
+    function show() {
+      frame.classList.remove("phone-zoom");
+      frame.classList.add("opened");
+      if (reduceMotion) return;
+      frame.classList.add("melt-wait");
+      startMelt();
+    }
+    (img.decode ? img.decode() : Promise.resolve()).then(show, show);
+  });
+
   // シーンのタップでトップへ戻る。ダイヤルを回した指を離したときの click では戻らない
   var goHome = function () { window.location.href = "index.html"; };
   var fromDial = false;
@@ -351,6 +374,6 @@
   });
 })();
 </script>
-<script src="works-dial.js?v=11"></script>
+<script src="works-dial.js?v=12"></script>
 </body>
 </html>

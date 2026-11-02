@@ -23,7 +23,7 @@
   var rotation = 0;
 
   var enc = null;
-  fetch("assets/works.enc.json?v=2").then(function (r) { return r.json(); }).then(function (d) {
+  fetch("assets/works.enc.json?v=3").then(function (r) { return r.json(); }).then(function (d) {
     enc = d;
     digitsNeeded = d.digits;
     renderDots();
@@ -184,6 +184,7 @@
       hit.style.display = "none";
       click(0.8, 900);
       status.textContent = "つながりました";
+      setTimeout(function () { frame.dispatchEvent(new Event("works-unlocked")); }, 500); // つながった音のあと店内へ
     })["catch"](function () {
       busyTone();
       status.textContent = "番号が違います";
