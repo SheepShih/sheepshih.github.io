@@ -72,9 +72,14 @@
      回る部分は works-dial.js が canvas に描く(ブラウザによる見え方の違いをなくすため)。
      位置は写真(1116×2000)に対する割合 */
   /* 電話をタップするとシーン全体がダイヤルを中心に拡大する */
-  .works-scene {
+  .works-scene { /* 写真と同じ縦横比の箱。枠が縦に短いとき(スマホで画面の高さが足りないとき)は
+                   上下を均等に切る(object-fit: cover と同じ)。ダイヤルの部品は写真に対する割合で置くので、ずれない */
     position: absolute;
-    inset: 0;
+    left: 0;
+    top: 50%;
+    width: 100%;
+    aspect-ratio: 768 / 1376;
+    margin-top: -89.583%; /* 高さの半分(幅 × 1376/768 ÷ 2) */
     transform-origin: 50% 67.6%;
     transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
   }
@@ -346,6 +351,6 @@
   });
 })();
 </script>
-<script src="works-dial.js?v=10"></script>
+<script src="works-dial.js?v=11"></script>
 </body>
 </html>
