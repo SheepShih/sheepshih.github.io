@@ -101,16 +101,17 @@
   }
 
   function startMelt() {
-    var id = ++run, t0 = null, last = 0;
+    var id = ++run, elapsed = 0, last = null;
     frame.classList.remove("melt-wait");
     frame.classList.add("melting");
     applyMelt(0);
     function step(now) {
       if (id !== run) return;
-      if (t0 === null) { t0 = now; last = now; }
-      if (now - last > 100) t0 += now - last; // 長く止まった分は進めない
+      // 1コマで進むのは最大100ms。読み込みで止まっても飛ばず、
+      // 描画が重い環境(Safariなど)でも必ず最後まで進む
+      if (last !== null) elapsed += Math.min(now - last, 100);
       last = now;
-      var p = Math.min(1, (now - t0) / DUR);
+      var p = Math.min(1, elapsed / DUR);
       applyMelt(p);
       if (p < 1) requestAnimationFrame(step);
       else frame.classList.remove("melting");
