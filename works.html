@@ -67,8 +67,8 @@
   }
 
   /* ---------- 回転ダイヤル電話(パスワード入力) ----------
-     写真の上に、写真の盤を隠す土台(dial-bed)→ 回る盤の裏(dial-wall)→ 回る盤の表(dial-wheel)
-     → 固定の紙と指止め(dial-top)を重ねる。裏を画面の下へずらして盤の厚みにする。
+     写真の上に、穴を消した写真の盤(dial-bed)→ 穴の奥の影(dial-shadow、回る)→ 穴の縁(dial-rim、回る)
+     → 固定の紙と指止め(dial-top)を重ねる。縁は形だけが回り、色は写真の光(dial-rim-tex)を画面に固定して使う。
      位置は写真(1116×2000)に対する割合 */
   /* 電話をタップするとシーン全体がダイヤルを中心に拡大する */
   .works-scene {
@@ -101,15 +101,24 @@
     aspect-ratio: 1;
     transform: translateY(-50%);
   }
-  .dial-wheel,
-  .dial-wall {
+  .dial-spin { /* 円を楕円につぶして回す */
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
     transform: scaleY(0.6625) rotate(var(--dial-rot, 0deg));
   }
-  .dial-wall { transform: translateY(2.5%) scaleY(0.6625) rotate(var(--dial-rot, 0deg)); }
+  .dial-rim {
+    -webkit-mask: url(assets/img/dial-rim-mask.png?v=1) center / 100% 100% no-repeat;
+    mask: url(assets/img/dial-rim-mask.png?v=1) center / 100% 100% no-repeat;
+  }
+  .dial-rim-tex { /* 親の回転とつぶしを打ち消して、画面に固定する */
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transform: rotate(calc(-1 * var(--dial-rot, 0deg))) scaleY(1.5094);
+  }
   .dial-bed {
     position: absolute;
     left: 42.115%;
@@ -176,13 +185,13 @@
 
 <div class="works-frame melt-wait" id="worksFrame" role="link" tabindex="0" aria-label="トップへ戻る">
   <div class="works-scene">
-  <img class="works-img" src="assets/img/works-closed.webp?v=9" alt="Shih TingFang Diner — Works (2022~) 赤いダイヤル電話">
+  <img class="works-img" src="assets/img/works-closed.webp?v=10" alt="Shih TingFang Diner — Works (2022~) 赤いダイヤル電話">
   <div class="dial-layer">
     <div class="phone-tap" id="phoneTap"></div>
-    <img class="dial-bed" src="assets/img/dial-bed.webp?v=2" alt="" draggable="false">
+    <img class="dial-bed" src="assets/img/dial-bed.webp?v=3" alt="" draggable="false">
     <div class="dial-box" id="dialBox">
-      <img class="dial-wall" src="assets/img/dial-wall.webp?v=1" alt="" draggable="false">
-      <img class="dial-wheel" src="assets/img/dial-wheel.webp?v=6" alt="" draggable="false">
+      <img class="dial-spin" src="assets/img/dial-shadow.webp?v=1" alt="" draggable="false">
+      <div class="dial-spin dial-rim"><img class="dial-rim-tex" src="assets/img/dial-rim-tex.webp?v=1" alt="" draggable="false"></div>
     </div>
     <img class="dial-top" src="assets/img/dial-top.webp?v=2" alt="" draggable="false">
     <div class="dial-dots" id="dialDots" aria-hidden="true"></div>
