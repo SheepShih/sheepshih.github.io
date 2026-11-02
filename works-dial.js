@@ -33,6 +33,7 @@
     var html = "";
     for (var i = 0; i < digitsNeeded; i++) html += "<i" + (i < entered.length ? ' class="on"' : "") + "></i>";
     dots.innerHTML = html;
+    dots.style.gridTemplateColumns = "repeat(" + Math.ceil(digitsNeeded / 2) + ", 3px)"; // 2行に並べる
   }
   renderDots();
 

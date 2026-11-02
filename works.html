@@ -99,6 +99,7 @@
     width: 14.46%;
     aspect-ratio: 1;
     transform: translateY(-50%);
+    filter: drop-shadow(0 1.5px 1px rgba(60, 0, 0, 0.35)); /* 盤の厚み */
   }
   .dial-wheel {
     display: block;
@@ -115,17 +116,18 @@
   }
   .dial-needle {
     position: absolute;
-    left: 54.57%;
-    top: 67.9%;
-    width: 4.66%;
-    height: 0.99%;
+    left: 54.355%;
+    top: 67.78%;
+    width: 5.09%;
+    height: 1.23%;
   }
   .dial-dots { /* 中央の紙に、入力した桁数を表示 */
     position: absolute;
     left: 50.72%;
     top: 67.95%;
     transform: translate(-50%, -50%);
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(4, 3px); /* 2行に並べる */
     gap: 1px;
   }
   .dial-dots i {
@@ -168,12 +170,12 @@
 
 <div class="works-frame melt-wait" id="worksFrame" role="link" tabindex="0" aria-label="トップへ戻る">
   <div class="works-scene">
-  <img class="works-img" src="assets/img/works-closed.webp?v=5" alt="Shih TingFang Diner — Works (2022~) 赤いダイヤル電話">
+  <img class="works-img" src="assets/img/works-closed.webp?v=6" alt="Shih TingFang Diner — Works (2022~) 赤いダイヤル電話">
   <div class="dial-layer">
     <div class="phone-tap" id="phoneTap"></div>
     <img class="dial-bed" src="assets/img/dial-bed.webp?v=1" alt="" draggable="false">
-    <div class="dial-box"><img class="dial-wheel" id="dialWheel" src="assets/img/dial-wheel.webp?v=2" alt="" draggable="false"></div>
-    <img class="dial-needle" src="assets/img/dial-needle.webp?v=1" alt="" draggable="false">
+    <div class="dial-box"><img class="dial-wheel" id="dialWheel" src="assets/img/dial-wheel.webp?v=3" alt="" draggable="false"></div>
+    <img class="dial-needle" src="assets/img/dial-needle.webp?v=2" alt="" draggable="false">
     <div class="dial-dots" id="dialDots" aria-hidden="true"></div>
     <div class="dial-hit" id="dialHit" role="application" aria-label="番号を回して入力するダイヤル。キーボードの数字でも入力できます"></div>
     <div class="dial-status" id="dialStatus" aria-live="polite"></div>
@@ -344,6 +346,6 @@
   });
 })();
 </script>
-<script src="works-dial.js?v=3"></script>
+<script src="works-dial.js?v=4"></script>
 </body>
 </html>
