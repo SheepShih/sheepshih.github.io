@@ -165,9 +165,10 @@
   .works-frame.opened .dial-layer { display: none; }
   .works-frame.opened .works-scene { transform: none; transition: none; }
 
-  /* 店内の、鍵の掛かった私書箱。タップで鍵が回り、扉が右の蝶番を軸に手前へ開く。札は扉の動きで揺れる。
-     開き切ると、開いたデザイン(中に手紙・写真の扉と札)に切り替わる。
-     扉(鍵と札を消したもの)・鍵・札・箱の中・開いた扉の画像は暗号化された中身に入っている。位置は下の LOCKERS */
+  /* 店内の、鍵の掛かった私書箱。タップで鍵が回り、扉が手前へ開いて、開いたデザイン(node 365-240)の形で止まる。
+     扉の四隅は、閉じた扉の位置から開いたデザインの扉の位置まで、回転と同じ道筋で JS が動かす(射影変換)。
+     90度までは閉じた扉の表(鍵と札つき)、そこからは開いたデザインの扉(裏・札つき)を同じ四隅に貼る。
+     画像はすべて暗号化された中身に入っている。位置は下の LOCKERS */
   .locker-layer { position: absolute; inset: 0; display: none; }
   .works-frame.opened .locker-layer { display: block; }
   .works-frame.melt-wait .locker-layer,
@@ -177,7 +178,6 @@
     padding: 0;
     border: 0;
     background: none;
-    perspective: 520px;
     cursor: pointer;
     -webkit-user-select: none;
     user-select: none;
@@ -186,68 +186,16 @@
   .locker:focus-visible { outline: 2px solid #fff6dc; outline-offset: 2px; }
   .locker span, .locker img { position: absolute; display: block; }
   .locker img { width: 100%; height: 100%; pointer-events: none; }
-  .locker-inside { inset: 0; } /* 箱の中(開いたデザインの写真) */
-  .locker-opened { /* 開き切った扉と札(開いたデザインの写真)。動く扉と入れ替わる */
-    opacity: 0;
-    transition: opacity 0.12s ease;
-    pointer-events: none;
-  }
-  .locker.settled .locker-opened { opacity: 1; transition: opacity 0.3s ease; }
-  .locker.open.settled .locker-door { opacity: 0; transition: opacity 0.3s ease, transform 0s; }
-  .locker-door {
-    inset: 0;
-    transform-origin: 100% 50%; /* 蝶番は右側 */
-    transform-style: preserve-3d;
-    transition: transform 0.55s cubic-bezier(0.55, 0, 0.85, 0.45); /* 閉じるときは加速してパタンと当たる */
-  }
-  .locker.open .locker-door {
-    transform: rotateY(104deg); /* 開いたデザインの扉と同じくらいの角度 */
-    transition: transform 1s cubic-bezier(0.22, 0.75, 0.3, 1.04);
-  }
-  .locker-front, .locker-back, .locker-edge {
-    inset: 0;
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-  }
-  .locker-front { transform-style: preserve-3d; }
-  .locker-front::after { /* 開くにつれて扉の表が暗くなる */
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: rgba(60, 30, 15, 0.4);
-    opacity: 0;
-    transition: opacity 0.55s ease;
-  }
-  .locker.open .locker-front::after { opacity: 1; transition: opacity 1s ease; }
-  .locker-edge { /* 扉の厚み(開く側の縁) */
-    left: 0;
-    right: auto;
-    width: var(--t, 4px);
-    transform-origin: 0 50%;
-    transform: rotateY(90deg);
-    background: linear-gradient(90deg, #b99d78, #d9c6a5);
-    -webkit-backface-visibility: visible;
-    backface-visibility: visible;
-  }
-  .locker-back { /* 扉の裏(開いたデザインの扉と同じ淡いクリーム色。蝶番側に金具) */
-    transform: translateZ(calc(var(--t, 4px) * -1)) rotateY(180deg);
-    background: linear-gradient(90deg, #f3e8da, #eadccb 70%, #e2d2bf);
-    box-shadow: inset 0 0 0 1px rgba(170, 120, 90, 0.35);
-  }
-  .locker-hinge {
-    left: 1.5%;
-    width: 3%;
-    height: 7%;
-    border-radius: 1px;
-    background: linear-gradient(90deg, #b08a52, #e3c58c, #a07a44);
-  }
+  .locker-px { left: 0; top: 0; transform-origin: 0 0; } /* 中身は写真の px で置き、箱の大きさに合わせて縮める */
+  .locker-front, .locker-back { left: 0; top: 0; transform-origin: 0 0; pointer-events: none; }
+  .locker-back { visibility: hidden; }
+  .locker-shade { inset: 0; background: rgb(60, 30, 15); opacity: 0; } /* 扉の表が横を向くほど暗くなる */
   .locker-key { transition: transform 0.24s ease-in-out; }
   .locker.turned .locker-key { transform: scaleX(0.18); } /* 鍵を90度回す(横から見る形になる) */
   .locker-tag, .locker-tag > span { inset: 0; }
-  .locker-tag > span { transform-style: preserve-3d; }
-  .locker.jolt .locker-tag { animation: tag-jolt 0.9s ease-out; }             /* 鍵を回したとき、輪がねじれて札がくるっと揺れる */
-  .locker.swing-open .locker-tag > span { animation: tag-open 1.9s linear; }  /* 開いて止まった勢いで札が手前へ跳ねる */
-  .locker.swing-close .locker-tag > span { animation: tag-close 1.2s linear; } /* 閉じる勢いで浮いて、当たって跳ねる */
+  .locker.jolt .locker-tag { animation: tag-jolt 0.9s ease-out; }               /* 鍵を回したとき、輪がねじれて札がくるっと揺れる */
+  .locker.swing-open .locker-tag > span { animation: tag-open 0.45s linear forwards; }   /* 扉が動き出すと遅れて浮く */
+  .locker.swing-close .locker-tag > span { animation: tag-close 1.1s linear; }  /* 閉じる勢いで浮いて、当たって跳ねる */
   @keyframes tag-jolt {
     0% { transform: rotate(0); }
     20% { transform: rotate(-11deg); }
@@ -255,27 +203,22 @@
     70% { transform: rotate(-3deg); }
     100% { transform: rotate(0); }
   }
+  /* 札が扉から浮く動き(手前へ傾く)は、縦に縮めて表す */
   @keyframes tag-open {
-    0% { transform: rotateX(0) rotate(0); }
-    35% { transform: rotateX(4deg) rotate(-3deg); }
-    50% { transform: rotateX(42deg) rotate(5deg); animation-timing-function: ease-in; }
-    62% { transform: rotateX(6deg) rotate(-4deg); animation-timing-function: ease-out; }
-    72% { transform: rotateX(18deg) rotate(3deg); animation-timing-function: ease-in; }
-    82% { transform: rotateX(2deg) rotate(-1.5deg); animation-timing-function: ease-out; }
-    90% { transform: rotateX(6deg) rotate(1deg); }
-    100% { transform: rotateX(0) rotate(0); }
+    0% { transform: rotate(0) scaleY(1); }
+    40% { transform: rotate(6deg) scaleY(0.86); }
+    100% { transform: rotate(10deg) scaleY(0.78); }
   }
   @keyframes tag-close {
-    0% { transform: rotateX(0); animation-timing-function: ease-out; }
-    30% { transform: rotateX(30deg); animation-timing-function: ease-in; }
-    46% { transform: rotateX(0) rotate(-4deg); animation-timing-function: ease-out; }
-    60% { transform: rotateX(14deg) rotate(3deg); animation-timing-function: ease-in; }
-    74% { transform: rotateX(0) rotate(-1.5deg); animation-timing-function: ease-out; }
-    85% { transform: rotateX(4deg); }
-    100% { transform: rotateX(0) rotate(0); }
+    0% { transform: rotate(8deg) scaleY(0.8); animation-timing-function: ease-in; }
+    45% { transform: rotate(-3deg) scaleY(1); animation-timing-function: ease-out; }
+    60% { transform: rotate(3deg) scaleY(0.88); animation-timing-function: ease-in; }
+    75% { transform: rotate(-1.5deg) scaleY(1); animation-timing-function: ease-out; }
+    87% { transform: rotate(1deg) scaleY(0.96); }
+    100% { transform: rotate(0) scaleY(1); }
   }
   @media (prefers-reduced-motion: reduce) {
-    .locker-door, .locker.open .locker-door, .locker-front::after, .locker-key, .locker-opened { transition: none !important; }
+    .locker-key { transition: none !important; }
     .locker .locker-tag, .locker .locker-tag > span { animation: none !important; }
   }
   .dial-status {
@@ -470,17 +413,58 @@
     (img.decode ? img.decode() : Promise.resolve()).then(show, show);
   });
 
-  // 鍵(札)の掛かった私書箱の扉。店内の画像(1116×2000)での位置 [左, 上, 右, 下]
+  // 鍵(札)の掛かった私書箱。店内の画像(1116×2000)での位置 [左, 上, 右, 下] と、
+  // 開いたデザインでの扉の四隅(蝶番側の上・下、開く側の上・下)
   var LOCKERS = [
-    [667, 205, 887, 428],
-    [447, 429, 666, 746],
-    [227, 747, 446, 961],
-    [667, 747, 887, 961],
-    [447, 962, 666, 1176]
+    { box: [667, 205, 887, 428], ht: [866, 212], hb: [866, 414], ft: [969, 157], fb: [971, 370] },
+    { box: [447, 429, 666, 746], ht: [644, 440], hb: [644, 736], ft: [736, 404], fb: [736, 706] },
+    { box: [227, 747, 446, 961], ht: [419, 760], hb: [419, 951], ft: [500, 749], fb: [500, 951] },
+    { box: [667, 747, 887, 961], ht: [868, 760], hb: [868, 951], ft: [971, 745], fb: [971, 951] },
+    { box: [447, 962, 666, 1176], ht: [644, 976], hb: [644, 1172], ft: [736, 972], fb: [737, 1170] }
   ];
-  var SETTLE = 950; // 扉が開き切ってから、開いたデザイン(写真の扉と札)に切り替えるまで(ms)
+  var OPEN_ANGLE = 110; // 開いたデザインの扉の角度(度)
+  var OPEN_MS = 950, CLOSE_MS = 520;
 
   function pct(v, total) { return (v / total * 100) + "%"; }
+
+  // 4点 src を 4点 dst に移す射影変換を CSS の matrix3d にする
+  function homography(src, dst) {
+    var A = [], b = [];
+    for (var i = 0; i < 4; i++) {
+      var x = src[i][0], y = src[i][1], u = dst[i][0], v = dst[i][1];
+      A.push([x, y, 1, 0, 0, 0, -u * x, -u * y]); b.push(u);
+      A.push([0, 0, 0, x, y, 1, -v * x, -v * y]); b.push(v);
+    }
+    for (var c = 0; c < 8; c++) { // ガウスの消去法
+      var piv = c;
+      for (var r = c + 1; r < 8; r++) if (Math.abs(A[r][c]) > Math.abs(A[piv][c])) piv = r;
+      var t = A[c]; A[c] = A[piv]; A[piv] = t; t = b[c]; b[c] = b[piv]; b[piv] = t;
+      for (r = 0; r < 8; r++) {
+        if (r === c) continue;
+        var f = A[r][c] / A[c][c];
+        for (var k = c; k < 8; k++) A[r][k] -= f * A[c][k];
+        b[r] -= f * b[c];
+      }
+    }
+    var h = b.map(function (v, i) { return v / A[i][i]; });
+    return "matrix3d(" + [h[0], h[3], 0, h[6], h[1], h[4], 0, h[7], 0, 0, 1, 0, h[2], h[5], 0, 1].join(",") + ")";
+  }
+
+  // 角度 deg のときの扉の四隅(箱の左上からの写真の px)。0度は閉じた扉、OPEN_ANGLE で開いたデザインの扉に重なる
+  function doorQuad(L, deg) {
+    var b = L.box, w = b[2] - b[0], h = b[3] - b[1];
+    var th = deg * Math.PI / 180, thF = OPEN_ANGLE * Math.PI / 180;
+    var p = Math.min(1, deg / OPEN_ANGLE), s = Math.sin(th) / Math.sin(thF); // s: 手前へ出た量(遠近の強さ)
+    function lerp(a, c, t) { return a + (c - a) * t; }
+    // 蝶番の辺: 閉じた位置から開いたデザインの位置へ
+    var hx = lerp(w, L.ht[0] - b[0], p);
+    var hty = lerp(0, L.ht[1] - b[1], p), hby = lerp(h, L.hb[1] - b[1], p);
+    // 開く側の辺: 蝶番からの横の距離は -cos で回り、上下は手前へ出た量だけ開いたデザインの形に近づく
+    var kF = ((L.ft[0] + L.fb[0]) / 2 - L.ht[0]) / (-Math.cos(thF) * w);
+    var fx = hx - Math.cos(th) * w * lerp(1, kF, s);
+    var dTop = lerp(0, (L.ft[1] - L.ht[1]), s), dBot = lerp(0, (L.fb[1] - L.hb[1]), s);
+    return { ft: [fx, hty + dTop], fb: [fx, hby + dBot], ht: [hx, hty], hb: [hx, hby] };
+  }
 
   // 音(鍵を回すカチッ・扉が閉まるパタン)。WebAudio のノイズを短く鳴らす
   var actx = null;
@@ -516,10 +500,10 @@
     });
     var layer = document.createElement("div");
     layer.className = "locker-layer";
-    LOCKERS.forEach(function (b, i) {
+    LOCKERS.forEach(function (L, i) {
       var p = parts[i];
       if (!p) return;
-      var w = b[2] - b[0], h = b[3] - b[1];
+      var b = L.box, w = b[2] - b[0], h = b[3] - b[1];
       var box = document.createElement("button");
       box.type = "button";
       box.className = "locker";
@@ -529,30 +513,68 @@
       box.style.top = pct(b[1], 2000);
       box.style.width = pct(w, 1116);
       box.style.height = pct(h, 2000);
-      var key = p.key.dataset, tag = p.tag.dataset;
+      var key = p.key.dataset, tag = p.tag.dataset, od = p.opened.dataset;
       function place(d) {
         return "left:" + pct(+d.x, w) + ";top:" + pct(+d.y, h) + ";width:" + pct(+d.w, w) + ";height:" + pct(+d.h, h);
       }
       box.innerHTML =
-        '<span class="locker-inside"><img src="' + p.inside.src + '" alt=""></span>' +
-        '<span class="locker-door">' +
-          '<span class="locker-front"><img src="' + p.door.src + '" alt="">' +
+        '<span class="locker-px" style="width:' + w + 'px;height:' + h + 'px">' +
+          '<span class="locker-inside" style="left:0;top:0;width:' + w + 'px;height:' + h + 'px"><img src="' + p.inside.src + '" alt=""></span>' +
+          '<span class="locker-back" style="width:' + od.w + 'px;height:' + od.h + 'px"><img src="' + p.opened.src + '" alt=""></span>' +
+          '<span class="locker-front" style="width:' + w + 'px;height:' + h + 'px"><img src="' + p.door.src + '" alt="">' +
             '<span class="locker-key" style="' + place(key) + '"><img src="' + p.key.src + '" alt=""></span>' +
             '<span class="locker-tag" style="' + place(tag) + ';transform-origin:' +
               pct(tag.px - tag.x, +tag.w) + ' ' + pct(tag.py - tag.y, +tag.h) + '">' +
               '<span style="transform-origin:inherit"><img src="' + p.tag.src + '" alt=""></span></span>' +
+            '<span class="locker-shade"></span>' +
           '</span>' +
-          '<span class="locker-edge"></span>' +
-          '<span class="locker-back"><span class="locker-hinge" style="top:14%"></span><span class="locker-hinge" style="bottom:14%"></span></span>' +
-        '</span>' +
-        '<span class="locker-opened" style="' + place(p.opened.dataset) + '"><img src="' + p.opened.src + '" alt=""></span>';
+        '</span>';
+      var pxEl = box.querySelector(".locker-px"), front = box.querySelector(".locker-front");
+      var back = box.querySelector(".locker-back"), shade = box.querySelector(".locker-shade");
+      // 開いたデザインの扉の四隅を、その画像(開いた扉の切り抜き)の中の座標で
+      var ox = +od.x, oy = +od.y;
+      var backSrc = [[L.ft[0] - b[0] - ox, L.ft[1] - b[1] - oy], [L.ht[0] - b[0] - ox, L.ht[1] - b[1] - oy],
+                     [L.hb[0] - b[0] - ox, L.hb[1] - b[1] - oy], [L.fb[0] - b[0] - ox, L.fb[1] - b[1] - oy]];
+      var frontSrc = [[0, 0], [w, 0], [w, h], [0, h]];
+      var angle = 0;
+      function render(deg) {
+        angle = deg;
+        pxEl.style.transform = "scale(" + (box.offsetWidth / w) + ")";
+        var q = doorQuad(L, deg), dst = [q.ft, q.ht, q.hb, q.fb];
+        if (deg < 90) { // 表(閉じた扉)。横を向くほど暗く、細くなりすぎないよう最低2px
+          if (Math.abs(dst[0][0] - dst[1][0]) < 2) { dst[0] = [dst[1][0] - 2, dst[0][1]]; dst[3] = [dst[2][0] - 2, dst[3][1]]; }
+          front.style.visibility = "visible";
+          back.style.visibility = "hidden";
+          front.style.transform = deg ? homography(frontSrc, dst) : "none";
+          shade.style.opacity = (0.45 * Math.sin(deg * Math.PI / 180)).toFixed(3);
+        } else { // 裏(開いたデザインの扉)。開き切ると写真と同じ位置・形
+          if (Math.abs(dst[0][0] - dst[1][0]) < 2) { dst[0] = [dst[1][0] + 2, dst[0][1]]; dst[3] = [dst[2][0] + 2, dst[3][1]]; }
+          front.style.visibility = "hidden";
+          back.style.visibility = "visible";
+          back.style.transform = homography(backSrc, dst);
+          back.style.filter = deg < OPEN_ANGLE ? "brightness(" + (0.8 + 0.2 * (deg - 90) / (OPEN_ANGLE - 90)).toFixed(3) + ")" : "";
+        }
+      }
+      function animate(to, ms, ease, done) {
+        var from = angle, start = null;
+        function step(now) {
+          if (start === null) start = now;
+          var t = Math.min(1, (now - start) / ms);
+          render(from + (to - from) * ease(t));
+          if (t < 1) requestAnimationFrame(step);
+          else if (done) done();
+        }
+        requestAnimationFrame(step);
+      }
+      function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+      function easeIn(t) { return t * t; }
       var busy = false;
       box.addEventListener("click", function () {
         if (busy) return;
-        box.style.setProperty("--t", (box.offsetWidth * 0.05).toFixed(2) + "px"); // 扉の厚み(3D の奥行きは px で指定するため)
         var opening = !box.classList.contains("open");
         box.setAttribute("aria-expanded", opening ? "true" : "false");
-        if (reduceMotion) { ["open", "turned", "settled"].forEach(function (c) { box.classList.toggle(c, opening); }); return; }
+        box.classList.toggle("open", opening);
+        if (reduceMotion) { box.classList.toggle("turned", opening); render(opening ? OPEN_ANGLE : 0); return; }
         busy = true;
         box.classList.add("moving");
         if (opening) {
@@ -560,29 +582,31 @@
           knock(2600, 0.5, 0.025);
           restart(box, "jolt");
           setTimeout(function () {
-            box.classList.add("open");          // 扉が開く
             box.classList.remove("swing-close");
             restart(box, "swing-open");
             knock(700, 0.15, 0.08);
+            animate(OPEN_ANGLE, OPEN_MS, easeOut, function () { // 扉が開く
+              busy = false;
+              box.classList.remove("moving");
+            });
           }, 260);
-          setTimeout(function () { box.classList.add("settled"); }, 260 + SETTLE); // 開いたデザインに切り替える
-          setTimeout(function () { busy = false; box.classList.remove("moving"); }, 260 + SETTLE + 300);
         } else {
-          box.classList.remove("settled");      // 動く扉に戻してから閉める
-          setTimeout(function () {
-            box.classList.remove("open");       // 扉が閉まる
-            box.classList.remove("swing-open");
+          box.classList.remove("swing-open");
+          animate(0, CLOSE_MS, easeIn, function () { // 扉が閉まる(加速してパタンと当たる)
+            knock(380, 0.7, 0.09);
             restart(box, "swing-close");
-          }, 160);
-          setTimeout(function () { knock(380, 0.7, 0.09); }, 680);
-          setTimeout(function () {
-            box.classList.remove("turned");     // 鍵を戻す
-            knock(2600, 0.4, 0.025);
-            restart(box, "jolt");
-          }, 980);
-          setTimeout(function () { busy = false; box.classList.remove("moving"); }, 1310);
+            setTimeout(function () {
+              box.classList.remove("turned");   // 鍵を戻す
+              knock(2600, 0.4, 0.025);
+              restart(box, "jolt");
+            }, 300);
+            setTimeout(function () { busy = false; box.classList.remove("moving"); }, 650);
+          });
         }
       });
+      // 箱が見えたとき・大きさが変わったときに描き直す
+      if (window.ResizeObserver) new ResizeObserver(function () { render(angle); }).observe(box);
+      else window.addEventListener("resize", function () { render(angle); });
       layer.appendChild(box);
     });
     frame.querySelector(".works-scene").appendChild(layer);
