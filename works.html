@@ -571,11 +571,11 @@
           '<span class="locker-hang" style="' + placeBox(p.hang.dataset) + '"><img src="' + p.hang.src + '" alt=""></span>' +
           '<span class="locker-front" style="width:' + iw + 'px;height:' + ih + 'px">' +
             '<span class="locker-panel"><img src="' + p.panel.src + '" alt=""></span>' +
-            '<span class="locker-shade"></span>' +
             '<span class="locker-key" style="' + placePx(key) + '"><img src="' + p.key.src + '" alt=""></span>' +
             '<span class="locker-tag" style="' + placePx(tag) + ';transform-origin:' +
               pct(tag.px - tag.x, +tag.w) + ' ' + pct(tag.py - tag.y, +tag.h) + '">' +
               '<span style="transform-origin:inherit"><img src="' + p.tag.src + '" alt=""></span></span>' +
+            '<span class="locker-shade"></span>' + // 扉が横を向くほど、鍵と札も一緒に暗くなる
           '</span>' +
         '</span>';
       var pxEl = box.querySelector(".locker-px"), front = box.querySelector(".locker-front");
@@ -716,6 +716,6 @@
   });
 })();
 </script>
-<script src="works-dial.js?v=24"></script>
+<script src="works-dial.js?v=25"></script>
 </body>
 </html>
