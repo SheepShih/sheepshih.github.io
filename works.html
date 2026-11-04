@@ -611,8 +611,12 @@
           edge.style.visibility = "hidden";
         }
         // 壁の影は開くにつれて濃く。ぶら下がる札は扉の端の同じ位置について動き、真横の前後(84〜92度)で扉の表の札と入れ替わる
-        var k = Math.max(0, Math.min(1, (deg - 80) / (OPEN_ANGLE - 80)));
-        wallShadow.style.opacity = k.toFixed(3);
+        // 影は扉の端が右へ出ていくのに合わせて、蝶番側から順に現れる(境目はぼかす)
+        var k = Math.max(0, Math.min(1, (deg - 90) / (OPEN_ANGLE - 90)));
+        var reach = ((q.ft[0] + q.fb[0]) / 2 - +p.wallshadow.dataset.x) + k * +p.wallshadow.dataset.w;
+        var grad = "linear-gradient(to right, #000 " + reach.toFixed(1) + "px, transparent " + (reach + 28).toFixed(1) + "px)";
+        wallShadow.style.webkitMaskImage = wallShadow.style.maskImage = grad;
+        wallShadow.style.opacity = Math.min(1, k * 1.4).toFixed(3);
         wallShadow.style.visibility = k > 0 ? "visible" : "hidden";
         var swap = Math.max(0, Math.min(1, (deg - 84) / 8));
         var endX = L.ft[0] - b[0] + (L.fb[0] - L.ft[0]) * hangAt, endY = L.ft[1] - b[1] + (L.fb[1] - L.ft[1]) * hangAt;
@@ -711,6 +715,6 @@
   });
 })();
 </script>
-<script src="works-dial.js?v=20"></script>
+<script src="works-dial.js?v=21"></script>
 </body>
 </html>
