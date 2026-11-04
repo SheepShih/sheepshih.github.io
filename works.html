@@ -595,7 +595,9 @@
         angle = deg;
         pxEl.style.transform = "scale(" + (box.offsetWidth / w) + ")";
         var q = doorQuad(L, deg), dst = [q.ft, q.ht, q.hb, q.fb];
+        // 札が離れていくにつれて、元の写真の札の影を消していく(急に消すと札の下が明るい帯になる)
         under.style.visibility = deg > 0.5 ? "visible" : "hidden";
+        under.style.opacity = Math.min(1, deg / 30).toFixed(3);
         // 厚み: 開く側の辺の外側に、厚み × sin(角度) の幅で見える(90度までは左、そこからは右)。
         // 開いたデザインの扉には縁が見えないので、95度から開き切るまでに消す
         var fade = deg <= 95 ? 1 : Math.max(0, (OPEN_ANGLE - deg) / (OPEN_ANGLE - 95));
@@ -715,6 +717,6 @@
   });
 })();
 </script>
-<script src="works-dial.js?v=22"></script>
+<script src="works-dial.js?v=23"></script>
 </body>
 </html>
