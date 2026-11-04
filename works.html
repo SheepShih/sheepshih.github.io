@@ -447,11 +447,11 @@
     { box: [667, 747, 887, 961], ht: [868, 760], hb: [868, 951], ft: [971, 745], fb: [971, 951] },
     { box: [447, 962, 666, 1176], ht: [644, 976], hb: [644, 1172], ft: [736, 972], fb: [737, 1170] }
   ];
-  var OPEN_ANGLE = 104; // 開いたデザインの扉の角度(度)
-  // 開いたデザインの5枚の扉から求めた、写真を撮ったカメラ(目の位置と距離。写真の px)
-  var CAMERA = { x: 425, y: 1050, d: 4000 };
+  var OPEN_ANGLE = 113; // 開いたデザインの扉の角度(度)
+  // 開いたデザインの5枚の扉(板の大きさで回したもの)から求めた、写真を撮ったカメラ(目の位置と距離。写真の px)
+  var CAMERA = { x: 300, y: 1100, d: 3000 };
   var THICK = 0.05;     // 扉の厚み(扉の幅に対する割合)
-  var OPEN_MS = 950, CLOSE_MS = 520;
+  var OPEN_MS = 1150, CLOSE_MS = 560;
 
   function pct(v, total) { return (v / total * 100) + "%"; }
 
@@ -620,7 +620,9 @@
         }
         requestAnimationFrame(step);
       }
-      function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+      function easeOpen(t) { // ゆっくり動き出して途中で勢いがつき、最後はそっと止まる(後半を長めに)
+        return (1 - Math.cos(Math.PI * Math.pow(t, 0.8))) / 2;
+      }
       function easeIn(t) { return t * t; }
       var busy = false;
       box.addEventListener("click", function () {
@@ -639,7 +641,7 @@
             box.classList.remove("swing-close");
             restart(box, "swing-open");
             knock(700, 0.15, 0.08);
-            animate(OPEN_ANGLE, OPEN_MS, easeOut, function () { // 扉が開く
+            animate(OPEN_ANGLE, OPEN_MS, easeOpen, function () { // 扉が開く
               busy = false;
               box.classList.remove("moving");
             });
@@ -687,6 +689,6 @@
   });
 })();
 </script>
-<script src="works-dial.js?v=15"></script>
+<script src="works-dial.js?v=16"></script>
 </body>
 </html>
