@@ -164,6 +164,65 @@
   #worksSecret { display: none; }
   .works-frame.opened .dial-layer { display: none; }
   .works-frame.opened .works-scene { transform: none; transition: none; }
+
+  /* 店内の、鍵の掛かった私書箱。タップで扉が右の蝶番を軸に手前へ開く。
+     扉は店内の画像の同じ場所を切り出したもの(works.html の LOCKERS が位置を持つ) */
+  .locker-layer { position: absolute; inset: 0; display: none; }
+  .works-frame.opened .locker-layer { display: block; }
+  .works-frame.melt-wait .locker-layer,
+  .works-frame.melting .locker-layer { visibility: hidden; }
+  .locker {
+    position: absolute;
+    padding: 0;
+    border: 0;
+    background: none;
+    perspective: 700px;
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .locker.open { z-index: 1; }
+  .locker:focus-visible { outline: 2px solid #fff6dc; outline-offset: 2px; }
+  .locker-inside { /* 扉の奥の箱 */
+    position: absolute;
+    inset: 2%;
+    background:
+      linear-gradient(180deg, rgba(0, 0, 0, 0.4), transparent 28%, transparent 82%, rgba(255, 225, 190, 0.1) 84%),
+      linear-gradient(90deg, rgba(0, 0, 0, 0.3), transparent 22%, transparent 80%, rgba(0, 0, 0, 0.22)),
+      #47321f;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35), inset 5px 7px 12px rgba(0, 0, 0, 0.5);
+  }
+  .locker-door {
+    position: absolute;
+    inset: 0;
+    transform-origin: 100% 50%; /* 蝶番は右側 */
+    transform-style: preserve-3d;
+    transition: transform 0.75s cubic-bezier(0.3, 1.15, 0.45, 1);
+  }
+  .locker.open .locker-door { transform: rotateY(112deg); }
+  .locker-front, .locker-back {
+    position: absolute;
+    inset: 0;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+  }
+  .locker-front::after { /* 開くにつれて扉の表が暗くなる */
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(60, 30, 15, 0.35);
+    opacity: 0;
+    transition: opacity 0.75s ease;
+  }
+  .locker.open .locker-front::after { opacity: 1; }
+  .locker-back { /* 扉の裏 */
+    transform: rotateY(180deg);
+    background: linear-gradient(90deg, #c4ab88, #e0cfb1);
+    box-shadow: inset 0 0 0 1.5px rgba(170, 95, 60, 0.55), 0 3px 10px rgba(70, 35, 15, 0.3);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .locker-door, .locker-front::after { transition: none; }
+  }
   .dial-status {
     position: absolute;
     width: 1px;
@@ -345,6 +404,7 @@
     img.alt = open.alt;
     img.src = open.src;
     document.title = "Works (2022~) | Shih TingFang 施婷方 | Portfolio";
+    buildLockers(open.src);
     function show() {
       frame.classList.remove("phone-zoom");
       frame.classList.add("opened");
@@ -354,6 +414,43 @@
     }
     (img.decode ? img.decode() : Promise.resolve()).then(show, show);
   });
+
+  // 鍵(札)の掛かった私書箱の扉。店内の画像(1116×2000)での位置 [左, 上, 右, 下]
+  var LOCKERS = [
+    [447, 205, 666, 428],
+    [667, 429, 887, 746],
+    [227, 747, 446, 961],
+    [888, 747, 1040, 961],
+    [667, 962, 887, 1176]
+  ];
+  function buildLockers(src) {
+    var layer = document.createElement("div");
+    layer.className = "locker-layer";
+    LOCKERS.forEach(function (b) {
+      var w = b[2] - b[0], h = b[3] - b[1];
+      var box = document.createElement("button");
+      box.type = "button";
+      box.className = "locker";
+      box.setAttribute("aria-label", "私書箱");
+      box.setAttribute("aria-expanded", "false");
+      box.style.left = (b[0] / 1116 * 100) + "%";
+      box.style.top = (b[1] / 2000 * 100) + "%";
+      box.style.width = (w / 1116 * 100) + "%";
+      box.style.height = (h / 2000 * 100) + "%";
+      box.innerHTML = '<span class="locker-inside"></span><span class="locker-door">' +
+        '<span class="locker-front"></span><span class="locker-back"></span></span>';
+      var front = box.querySelector(".locker-front");
+      front.style.backgroundImage = 'url("' + src + '")';
+      front.style.backgroundSize = (1116 / w * 100) + "% " + (2000 / h * 100) + "%";
+      front.style.backgroundPosition = (b[0] / (1116 - w) * 100) + "% " + (b[1] / (2000 - h) * 100) + "%";
+      box.addEventListener("click", function () {
+        var isOpen = box.classList.toggle("open");
+        box.setAttribute("aria-expanded", isOpen ? "true" : "false");
+      });
+      layer.appendChild(box);
+    });
+    frame.querySelector(".works-scene").appendChild(layer);
+  }
 
   // シーンのタップでトップへ戻る。ダイヤルを回した指を離したときの click では戻らない
   var goHome = function () { window.location.href = "index.html"; };
@@ -366,10 +463,12 @@
     // 電話をタップで拡大、拡大中は外をタップで元に戻す
     if (frame.classList.contains("phone-zoom")) { frame.classList.remove("phone-zoom"); return; }
     if (e.target.closest(".phone-tap")) { frame.classList.add("phone-zoom"); return; }
+    if (e.target.closest(".locker")) return; // 私書箱は扉を開け閉めするだけ
     goHome();
   });
   frame.addEventListener("keydown", function (e) {
     if (e.key === "Escape") { frame.classList.remove("phone-zoom"); return; }
+    if (e.target.closest(".locker")) return;
     if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goHome(); }
   });
 })();
