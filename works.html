@@ -571,18 +571,20 @@
           '<span class="locker-hang" style="' + placeBox(p.hang.dataset) + '"><img src="' + p.hang.src + '" alt=""></span>' +
           '<span class="locker-front" style="width:' + iw + 'px;height:' + ih + 'px">' +
             '<span class="locker-panel"><img src="' + p.panel.src + '" alt=""></span>' +
+            // 札が扉に落とす影(扉と一緒に動く)
+            '<span class="locker-tagshadow" style="' + placePx(p.tshadow.dataset) + '"><img src="' + p.tshadow.src + '" alt=""></span>' +
+            '<span class="locker-shade"></span>' +
             '<span class="locker-key" style="' + placePx(key) + '"><img src="' + p.key.src + '" alt=""></span>' +
             '<span class="locker-tag" style="' + placePx(tag) + ';transform-origin:' +
               pct(tag.px - tag.x, +tag.w) + ' ' + pct(tag.py - tag.y, +tag.h) + '">' +
               '<span style="transform-origin:inherit"><img src="' + p.tag.src + '" alt=""></span></span>' +
-            '<span class="locker-shade"></span>' + // 扉が横を向くほど、鍵と札も一緒に暗くなる
           '</span>' +
         '</span>';
       var pxEl = box.querySelector(".locker-px"), front = box.querySelector(".locker-front");
       var back = box.querySelector(".locker-back"), shade = box.querySelector(".locker-shade");
       var edge = box.querySelector(".locker-edge"), under = box.querySelector(".locker-under");
       var wallShadow = box.querySelector(".locker-wallshadow"), hang = box.querySelector(".locker-hang");
-      var tagEl = box.querySelector(".locker-tag"), hangAt = +p.hang.dataset.fy; // 札が下がる位置(開く側の辺の上からの割合)
+      var keyEl = box.querySelector(".locker-key"), tagEl = box.querySelector(".locker-tag"), hangAt = +p.hang.dataset.fy; // 札が下がる位置(開く側の辺の上からの割合)
       var edgeSrc = [[0, 0], [10, 0], [10, 100], [0, 100]];
       // 開いたデザインの扉の四隅を、その画像(開いた扉の切り抜き)の中の座標で
       var ox = +od.x, oy = +od.y;
@@ -592,7 +594,7 @@
       var angle = 0;
       function render(deg) {
         angle = deg;
-        pxEl.style.transform = "scale(" + (box.offsetWidth / w) + ")";
+        pxEl.style.transform = "scale(" + (parseFloat(getComputedStyle(box).width) / w) + ")"; // 幅は丸めずに使う(offsetWidth は整数に丸められ、写真から1pxほどずれる)
         var q = doorQuad(L, deg), dst = [q.ft, q.ht, q.hb, q.fb];
         // 札が離れていくにつれて、元の写真の札の影を消していく(急に消すと札の下が明るい帯になる)
         under.style.visibility = deg > 0.5 ? "visible" : "hidden";
@@ -632,6 +634,8 @@
           back.style.visibility = "hidden";
           front.style.transform = homography(frontSrc, dst);
           shade.style.opacity = (0.16 * Math.sin(deg * Math.PI / 180)).toFixed(3);
+          // 鍵と札も扉と同じだけ暗くする(扉の外にはみ出した札の先まで同じに)
+          keyEl.style.filter = tagEl.style.filter = "brightness(" + (1 - 0.13 * Math.sin(deg * Math.PI / 180)).toFixed(3) + ")";
         } else { // 裏(開いたデザインの扉)。開き切ると写真と同じ位置・形
           if (Math.abs(dst[0][0] - dst[1][0]) < 2) { dst[0] = [dst[1][0] + 2, dst[0][1]]; dst[3] = [dst[2][0] + 2, dst[3][1]]; }
           front.style.visibility = "hidden";
@@ -716,6 +720,6 @@
   });
 })();
 </script>
-<script src="works-dial.js?v=25"></script>
+<script src="works-dial.js?v=27"></script>
 </body>
 </html>
