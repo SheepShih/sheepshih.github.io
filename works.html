@@ -583,8 +583,10 @@
         angle = deg;
         pxEl.style.transform = "scale(" + (box.offsetWidth / w) + ")";
         var q = doorQuad(L, deg), dst = [q.ft, q.ht, q.hb, q.fb];
-        // 厚み: 開く側の辺の外側に、厚み × sin(角度) の幅で見える(90度までは左、そこからは右)
-        var o = THICK * iw * Math.sin(deg * Math.PI / 180);
+        // 厚み: 開く側の辺の外側に、厚み × sin(角度) の幅で見える(90度までは左、そこからは右)。
+        // 開いたデザインの扉には縁が見えないので、95度から開き切るまでに消す
+        var fade = deg <= 95 ? 1 : Math.max(0, (OPEN_ANGLE - deg) / (OPEN_ANGLE - 95));
+        var o = THICK * iw * Math.sin(deg * Math.PI / 180) * fade;
         if (o > 0.3) {
           var side = deg < 90 ? -o : o, x0 = q.ft[0], x1 = q.ft[0] + side;
           var xa = Math.min(x0, x1), xb = Math.max(x0, x1);
@@ -648,14 +650,10 @@
           }, 260);
         } else {
           box.classList.remove("swing-open");
+          box.classList.remove("turned");       // 鍵は閉め始めに戻しておく(閉まる扉の鍵が細く見えないように)
           animate(0, CLOSE_MS, easeIn, function () { // 扉が閉まる(加速してパタンと当たる)
             knock(380, 0.7, 0.09);
             restart(box, "swing-close");
-            setTimeout(function () {
-              box.classList.remove("turned");   // 鍵を戻す
-              knock(2600, 0.4, 0.025);
-              restart(box, "jolt");
-            }, 300);
             setTimeout(function () { busy = false; box.classList.remove("moving"); }, 650);
           });
         }
@@ -689,6 +687,6 @@
   });
 })();
 </script>
-<script src="works-dial.js?v=16"></script>
+<script src="works-dial.js?v=17"></script>
 </body>
 </html>
