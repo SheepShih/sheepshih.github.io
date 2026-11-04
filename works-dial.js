@@ -23,7 +23,7 @@
   var rotation = 0;
 
   var enc = null;
-  fetch("assets/works.enc.json?v=5").then(function (r) { return r.json(); }).then(function (d) {
+  fetch("assets/works.enc.json?v=6").then(function (r) { return r.json(); }).then(function (d) {
     enc = d;
     digitsNeeded = d.digits;
     renderDots();
@@ -72,6 +72,7 @@
   function draw() {
     if (waiting) return;
     var n = Math.min(1024, Math.round(box.offsetWidth * (window.devicePixelRatio || 1) * 2.4)); // 拡大時も粗くならない大きさ
+    if (!n) return; // ダイヤルが見えていない(店内に切り替わった後など)
     if (canvas.width !== n) { canvas.width = canvas.height = work.width = work.height = n; }
     dctx.clearRect(0, 0, n, n);
     plate(dctx, imgs["dial-shadow.webp"], n, 0);

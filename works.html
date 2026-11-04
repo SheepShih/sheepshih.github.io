@@ -99,6 +99,8 @@
   .dial-layer { position: absolute; inset: 0; pointer-events: none; }
   .works-frame.melt-wait .dial-layer,
   .works-frame.melting .dial-layer { visibility: hidden; }
+  .works-frame.melt-wait .phone-tap,
+  .works-frame.melting .phone-tap { visibility: visible; } /* 登場のエフェクト中でも電話はタップできる */
   .dial-box {
     position: absolute;
     left: 43.548%;
@@ -166,7 +168,8 @@
   .works-frame.opened .works-scene { transform: none; transition: none; }
 
   /* 店内の、鍵の掛かった私書箱。タップで鍵が回り、扉が手前へ開いて、開いたデザイン(node 365-240)の形で止まる。
-     扉の四隅は、閉じた扉の位置から開いたデザインの扉の位置まで、回転と同じ道筋で JS が動かす(射影変換)。
+     回るのはオレンジの縁取りの内側の板だけ(縁取りは棚のもの)。板は写真のカメラから見た 3D の回転で JS が動かし(射影変換)、
+     開き切ると開いたデザインの扉とぴったり重なる。
      90度までは閉じた扉の表(鍵と札つき)、そこからは開いたデザインの扉(裏・札つき)を同じ四隅に貼る。
      画像はすべて暗号化された中身に入っている。位置は下の LOCKERS */
   .locker-layer { position: absolute; inset: 0; display: none; }
@@ -189,6 +192,7 @@
   .locker-px { left: 0; top: 0; transform-origin: 0 0; } /* 中身は写真の px で置き、箱の大きさに合わせて縮める */
   .locker-front, .locker-back { left: 0; top: 0; transform-origin: 0 0; pointer-events: none; }
   .locker-back { visibility: hidden; }
+  .locker.open .locker-back { pointer-events: auto; } /* 開いた扉をタップしても閉じる */
   .locker-edge { /* 扉の厚み(開く側の縁)。真横を向くほど太く見える */
     left: 0;
     top: 0;
@@ -200,7 +204,8 @@
     visibility: hidden;
     pointer-events: none;
   }
-  .locker-shade { inset: 0; background: rgb(60, 30, 15); opacity: 0; } /* 扉の表が横を向くほど暗くなる */
+  .locker-panel { inset: 0; }
+  .locker-shade { inset: 0; background: rgb(70, 40, 20); opacity: 0; } /* 扉の表が横を向くほど暗くなる */
   .locker-key { transition: transform 0.24s ease-in-out; }
   .locker.turned .locker-key { transform: scaleX(0.18); } /* 鍵を90度回す(横から見る形になる) */
   .locker-tag, .locker-tag > span { inset: 0; }
@@ -367,7 +372,9 @@
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   }
 
+  var skipMelt = false; // 登場のエフェクトが始まる前に電話がタップされたら、エフェクトはしない
   function startMelt() {
+    if (skipMelt) return;
     var id = ++run, elapsed = 0, last = null;
     if (melt === null) {
       try { melt = initMelt(); } catch (err) { melt = null; }
@@ -389,6 +396,12 @@
     }
     requestAnimationFrame(function () { requestAnimationFrame(step); });
   }
+  function finishMelt() { // エフェクトの途中で電話をタップしたら、すぐに終えて拡大する
+    run++;
+    skipMelt = true;
+    frame.classList.remove("melt-wait", "melting");
+    frame.style.opacity = "";
+  }
 
   function whenReady() {
     if (reduceMotion) { frame.classList.remove("melt-wait"); return; }
@@ -403,7 +416,7 @@
 
   // ブラウザの「戻る」で保存状態から復元されたときも再生する
   window.addEventListener("pageshow", function (e) {
-    if (e.persisted && !reduceMotion) startMelt();
+    if (e.persisted && !reduceMotion) { skipMelt = false; startMelt(); }
   });
 
   // 番号が正解すると(works-dial.js)、復号した店内の画像に差し替えて同じエフェクトで切り替える
@@ -419,6 +432,7 @@
       frame.classList.add("opened");
       if (reduceMotion) return;
       frame.classList.add("melt-wait");
+      skipMelt = false;
       startMelt();
     }
     (img.decode ? img.decode() : Promise.resolve()).then(show, show);
@@ -433,7 +447,9 @@
     { box: [667, 747, 887, 961], ht: [868, 760], hb: [868, 951], ft: [971, 745], fb: [971, 951] },
     { box: [447, 962, 666, 1176], ht: [644, 976], hb: [644, 1172], ft: [736, 972], fb: [737, 1170] }
   ];
-  var OPEN_ANGLE = 110; // 開いたデザインの扉の角度(度)
+  var OPEN_ANGLE = 104; // 開いたデザインの扉の角度(度)
+  // 開いたデザインの5枚の扉から求めた、写真を撮ったカメラ(目の位置と距離。写真の px)
+  var CAMERA = { x: 425, y: 1050, d: 4000 };
   var THICK = 0.05;     // 扉の厚み(扉の幅に対する割合)
   var OPEN_MS = 950, CLOSE_MS = 520;
 
@@ -462,21 +478,27 @@
     return "matrix3d(" + [h[0], h[3], 0, h[6], h[1], h[4], 0, h[7], 0, 0, 1, 0, h[2], h[5], 0, 1].join(",") + ")";
   }
 
-  // 角度 deg のときの扉の四隅(箱の左上からの写真の px)。0度は閉じた扉、OPEN_ANGLE で開いたデザインの扉に重なる
-  function doorQuad(L, deg) {
-    var b = L.box, w = b[2] - b[0], h = b[3] - b[1];
-    var th = deg * Math.PI / 180, thF = OPEN_ANGLE * Math.PI / 180;
-    var p = Math.min(1, deg / OPEN_ANGLE), s = Math.sin(th) / Math.sin(thF); // s: 手前へ出た量(遠近の強さ)
-    function lerp(a, c, t) { return a + (c - a) * t; }
-    // 蝶番の辺: 閉じた位置から開いたデザインの位置へ
-    var hx = lerp(w, L.ht[0] - b[0], p);
-    var hty = lerp(0, L.ht[1] - b[1], p), hby = lerp(h, L.hb[1] - b[1], p);
-    // 開く側の辺: 蝶番からの横の距離は -cos で回り、上下は手前へ出た量だけ開いたデザインの形に近づく
-    var kF = ((L.ft[0] + L.fb[0]) / 2 - L.ht[0]) / (-Math.cos(thF) * w);
-    var fx = hx - Math.cos(th) * w * lerp(1, kF, s);
-    var dTop = lerp(0, (L.ft[1] - L.ht[1]), s), dBot = lerp(0, (L.fb[1] - L.hb[1]), s);
-    return { ft: [fx, hty + dTop], fb: [fx, hby + dBot], ht: [hx, hty], hb: [hx, hby] };
+  // 角度 deg のときの扉の四隅(箱の左上からの写真の px)。
+  // 扉を蝶番のまわりに 3D で回して CAMERA から見た形にし、開いたデザインとのわずかな差は、開くにつれて足していく
+  function project(X, Y, Z) {
+    var f = CAMERA.d / (CAMERA.d - Z);
+    return [CAMERA.x + (X - CAMERA.x) * f, CAMERA.y + (Y - CAMERA.y) * f];
   }
+  function rotated(L, deg) { // 回るのは縁取りの内側の板(L.inner)。蝶番は板の右端
+    var b = L.inner, w = b[2] - b[0], th = deg * Math.PI / 180;
+    var X = b[2] - w * Math.cos(th), Z = w * Math.sin(th);
+    return { ht: [b[2], b[1]], hb: [b[2], b[3]], ft: project(X, b[1], Z), fb: project(X, b[3], Z) };
+  }
+  function doorQuad(L, deg) {
+    var b = L.box, r = rotated(L, deg), end = rotated(L, OPEN_ANGLE);
+    var p = Math.min(1, deg / OPEN_ANGLE), k = p * p * (3 - 2 * p); // 差を足す割合(なめらかに)
+    var q = {};
+    ["ht", "hb", "ft", "fb"].forEach(function (c) {
+      q[c] = [r[c][0] + (L[c][0] - end[c][0]) * k - b[0], r[c][1] + (L[c][1] - end[c][1]) * k - b[1]];
+    });
+    return q;
+  }
+
 
   // 音(鍵を回すカチッ・扉が閉まるパタン)。WebAudio のノイズを短く鳴らす
   var actx = null;
@@ -526,20 +548,25 @@
       box.style.width = pct(w, 1116);
       box.style.height = pct(h, 2000);
       var key = p.key.dataset, tag = p.tag.dataset, od = p.opened.dataset;
-      function place(d) {
-        return "left:" + pct(+d.x, w) + ";top:" + pct(+d.y, h) + ";width:" + pct(+d.w, w) + ";height:" + pct(+d.h, h);
+      var pn = p.panel.dataset, iw = +pn.w, ih = +pn.h;
+      L.inner = [b[0] + +pn.x, b[1] + +pn.y, b[0] + +pn.x + iw, b[1] + +pn.y + ih];
+      function placePx(d) { // 板の左上からの px
+        return "left:" + (d.x - pn.x) + "px;top:" + (d.y - pn.y) + "px;width:" + d.w + "px;height:" + d.h + "px";
       }
       box.innerHTML =
         '<span class="locker-px" style="width:' + w + 'px;height:' + h + 'px">' +
           '<span class="locker-inside" style="left:0;top:0;width:' + w + 'px;height:' + h + 'px"><img src="' + p.inside.src + '" alt=""></span>' +
+          // 縁取りは棚のもので動かない(開いたデザインと同じ)。真ん中が抜けていて、箱の中が見える
+          '<span class="locker-trim" style="left:0;top:0;width:' + w + 'px;height:' + h + 'px"><img src="' + p.frame.src + '" alt=""></span>' +
           '<span class="locker-edge"></span>' +
           '<span class="locker-back" style="width:' + od.w + 'px;height:' + od.h + 'px"><img src="' + p.opened.src + '" alt=""></span>' +
-          '<span class="locker-front" style="width:' + w + 'px;height:' + h + 'px"><img src="' + p.door.src + '" alt="">' +
-            '<span class="locker-key" style="' + place(key) + '"><img src="' + p.key.src + '" alt=""></span>' +
-            '<span class="locker-tag" style="' + place(tag) + ';transform-origin:' +
+          '<span class="locker-front" style="width:' + iw + 'px;height:' + ih + 'px">' +
+            '<span class="locker-panel"><img src="' + p.panel.src + '" alt=""></span>' +
+            '<span class="locker-shade"></span>' +
+            '<span class="locker-key" style="' + placePx(key) + '"><img src="' + p.key.src + '" alt=""></span>' +
+            '<span class="locker-tag" style="' + placePx(tag) + ';transform-origin:' +
               pct(tag.px - tag.x, +tag.w) + ' ' + pct(tag.py - tag.y, +tag.h) + '">' +
               '<span style="transform-origin:inherit"><img src="' + p.tag.src + '" alt=""></span></span>' +
-            '<span class="locker-shade"></span>' +
           '</span>' +
         '</span>';
       var pxEl = box.querySelector(".locker-px"), front = box.querySelector(".locker-front");
@@ -550,14 +577,14 @@
       var ox = +od.x, oy = +od.y;
       var backSrc = [[L.ft[0] - b[0] - ox, L.ft[1] - b[1] - oy], [L.ht[0] - b[0] - ox, L.ht[1] - b[1] - oy],
                      [L.hb[0] - b[0] - ox, L.hb[1] - b[1] - oy], [L.fb[0] - b[0] - ox, L.fb[1] - b[1] - oy]];
-      var frontSrc = [[0, 0], [w, 0], [w, h], [0, h]];
+      var frontSrc = [[0, 0], [iw, 0], [iw, ih], [0, ih]];
       var angle = 0;
       function render(deg) {
         angle = deg;
         pxEl.style.transform = "scale(" + (box.offsetWidth / w) + ")";
         var q = doorQuad(L, deg), dst = [q.ft, q.ht, q.hb, q.fb];
         // 厚み: 開く側の辺の外側に、厚み × sin(角度) の幅で見える(90度までは左、そこからは右)
-        var o = THICK * w * Math.sin(deg * Math.PI / 180);
+        var o = THICK * iw * Math.sin(deg * Math.PI / 180);
         if (o > 0.3) {
           var side = deg < 90 ? -o : o, x0 = q.ft[0], x1 = q.ft[0] + side;
           var xa = Math.min(x0, x1), xb = Math.max(x0, x1);
@@ -572,8 +599,8 @@
           if (Math.abs(dst[0][0] - dst[1][0]) < 2) { dst[0] = [dst[1][0] - 2, dst[0][1]]; dst[3] = [dst[2][0] - 2, dst[3][1]]; }
           front.style.visibility = "visible";
           back.style.visibility = "hidden";
-          front.style.transform = deg ? homography(frontSrc, dst) : "none";
-          shade.style.opacity = (0.45 * Math.sin(deg * Math.PI / 180)).toFixed(3);
+          front.style.transform = homography(frontSrc, dst);
+          shade.style.opacity = (0.16 * Math.sin(deg * Math.PI / 180)).toFixed(3);
         } else { // 裏(開いたデザインの扉)。開き切ると写真と同じ位置・形
           if (Math.abs(dst[0][0] - dst[1][0]) < 2) { dst[0] = [dst[1][0] + 2, dst[0][1]]; dst[3] = [dst[2][0] + 2, dst[3][1]]; }
           front.style.visibility = "hidden";
@@ -649,7 +676,7 @@
     if (fromDial) { fromDial = false; return; }
     // 電話をタップで拡大、拡大中は外をタップで元に戻す
     if (frame.classList.contains("phone-zoom")) { frame.classList.remove("phone-zoom"); return; }
-    if (e.target.closest(".phone-tap")) { frame.classList.add("phone-zoom"); return; }
+    if (e.target.closest(".phone-tap")) { finishMelt(); frame.classList.add("phone-zoom"); return; }
     if (e.target.closest(".locker")) return; // 私書箱は扉を開け閉めするだけ
     goHome();
   });
@@ -660,6 +687,6 @@
   });
 })();
 </script>
-<script src="works-dial.js?v=14"></script>
+<script src="works-dial.js?v=15"></script>
 </body>
 </html>
