@@ -192,7 +192,7 @@
   .locker-px { left: 0; top: 0; transform-origin: 0 0; } /* 中身は写真の px で置き、箱の大きさに合わせて縮める */
   .locker-front, .locker-back { left: 0; top: 0; transform-origin: 0 0; pointer-events: none; }
   .locker-back { visibility: hidden; }
-  .locker-under { visibility: hidden; }
+  .locker-under, .locker-wallshadow, .locker-hang { visibility: hidden; pointer-events: none; }
   .locker.open .locker-back { pointer-events: auto; } /* 開いた扉をタップしても閉じる */
   .locker-edge { /* 扉の厚み(開く側の縁)。真横を向くほど太く見える */
     left: 0;
@@ -554,6 +554,9 @@
       function placePx(d) { // 板の左上からの px
         return "left:" + (d.x - pn.x) + "px;top:" + (d.y - pn.y) + "px;width:" + d.w + "px;height:" + d.h + "px";
       }
+      function placeBox(d) { // 箱の左上からの px
+        return "left:" + d.x + "px;top:" + d.y + "px;width:" + d.w + "px;height:" + d.h + "px";
+      }
       box.innerHTML =
         '<span class="locker-px" style="width:' + w + 'px;height:' + h + 'px">' +
           '<span class="locker-inside" style="left:0;top:0;width:' + w + 'px;height:' + h + 'px"><img src="' + p.inside.src + '" alt=""></span>' +
@@ -561,8 +564,12 @@
           '<span class="locker-trim" style="left:0;top:0;width:' + w + 'px;height:' + h + 'px"><img src="' + p.frame.src + '" alt=""></span>' +
           // 札の影は箱の下の段まで落ちているので、扉が動いている間は影のない画像をかぶせる
           '<span class="locker-under" style="left:' + p.under.dataset.x + 'px;top:' + p.under.dataset.y + 'px;width:' + p.under.dataset.w + 'px;height:' + p.under.dataset.h + 'px"><img src="' + p.under.src + '" alt=""></span>' +
+          // 開いた扉が右の壁に落とす影(開いたデザインから)。壁のものなので動かさず、開くにつれて濃くする
+          '<span class="locker-wallshadow" style="' + placeBox(p.wallshadow.dataset) + '"><img src="' + p.wallshadow.src + '" alt=""></span>' +
           '<span class="locker-edge"></span>' +
           '<span class="locker-back" style="width:' + od.w + 'px;height:' + od.h + 'px"><img src="' + p.opened.src + '" alt=""></span>' +
+          // 開いた扉の端にぶら下がる鍵と札(開いたデザインから)。扉の端について動き、縦向きのまま下がる
+          '<span class="locker-hang" style="' + placeBox(p.hang.dataset) + '"><img src="' + p.hang.src + '" alt=""></span>' +
           '<span class="locker-front" style="width:' + iw + 'px;height:' + ih + 'px">' +
             '<span class="locker-panel"><img src="' + p.panel.src + '" alt=""></span>' +
             '<span class="locker-shade"></span>' +
@@ -575,6 +582,8 @@
       var pxEl = box.querySelector(".locker-px"), front = box.querySelector(".locker-front");
       var back = box.querySelector(".locker-back"), shade = box.querySelector(".locker-shade");
       var edge = box.querySelector(".locker-edge"), under = box.querySelector(".locker-under");
+      var wallShadow = box.querySelector(".locker-wallshadow"), hang = box.querySelector(".locker-hang");
+      var tagEl = box.querySelector(".locker-tag"), hangAt = +p.hang.dataset.fy; // 札が下がる位置(開く側の辺の上からの割合)
       var edgeSrc = [[0, 0], [10, 0], [10, 100], [0, 100]];
       // 開いたデザインの扉の四隅を、その画像(開いた扉の切り抜き)の中の座標で
       var ox = +od.x, oy = +od.y;
@@ -601,6 +610,17 @@
         } else {
           edge.style.visibility = "hidden";
         }
+        // 壁の影は開くにつれて濃く。ぶら下がる札は扉の端の同じ位置について動き、真横の前後(84〜92度)で扉の表の札と入れ替わる
+        var k = Math.max(0, Math.min(1, (deg - 80) / (OPEN_ANGLE - 80)));
+        wallShadow.style.opacity = k.toFixed(3);
+        wallShadow.style.visibility = k > 0 ? "visible" : "hidden";
+        var swap = Math.max(0, Math.min(1, (deg - 84) / 8));
+        var endX = L.ft[0] - b[0] + (L.fb[0] - L.ft[0]) * hangAt, endY = L.ft[1] - b[1] + (L.fb[1] - L.ft[1]) * hangAt;
+        var nowX = q.ft[0] + (q.fb[0] - q.ft[0]) * hangAt, nowY = q.ft[1] + (q.fb[1] - q.ft[1]) * hangAt;
+        hang.style.visibility = swap > 0 ? "visible" : "hidden";
+        hang.style.opacity = swap.toFixed(3);
+        hang.style.transform = "translate(" + (nowX - endX).toFixed(2) + "px," + (nowY - endY).toFixed(2) + "px)";
+        tagEl.style.opacity = (1 - Math.max(0, Math.min(1, (deg - 84) / 6))).toFixed(3);
         if (deg < 90) { // 表(閉じた扉)。横を向くほど暗く、細くなりすぎないよう最低2px
           if (Math.abs(dst[0][0] - dst[1][0]) < 2) { dst[0] = [dst[1][0] - 2, dst[0][1]]; dst[3] = [dst[2][0] - 2, dst[3][1]]; }
           front.style.visibility = "visible";
@@ -691,6 +711,6 @@
   });
 })();
 </script>
-<script src="works-dial.js?v=19"></script>
+<script src="works-dial.js?v=20"></script>
 </body>
 </html>
