@@ -165,8 +165,8 @@
   .works-frame.opened .dial-layer { display: none; }
   .works-frame.opened .works-scene { transform: none; transition: none; }
 
-  /* 店内の、鍵の掛かった私書箱。タップで扉が右の蝶番を軸に手前へ開く。
-     扉は店内の画像の同じ場所を切り出したもの(works.html の LOCKERS が位置を持つ) */
+  /* 店内の、鍵の掛かった私書箱。タップで鍵が回り、扉が右の蝶番を軸に手前へ開く。札は扉の動きで揺れる。
+     扉(鍵と札を消したもの)・鍵・札の画像は暗号化された中身に入っている。位置は下の LOCKERS */
   .locker-layer { position: absolute; inset: 0; display: none; }
   .works-frame.opened .locker-layer { display: block; }
   .works-frame.melt-wait .locker-layer,
@@ -176,52 +176,118 @@
     padding: 0;
     border: 0;
     background: none;
-    perspective: 700px;
+    perspective: 520px;
     cursor: pointer;
     -webkit-user-select: none;
     user-select: none;
   }
-  .locker.open { z-index: 1; }
+  .locker.open, .locker.moving { z-index: 1; }
   .locker:focus-visible { outline: 2px solid #fff6dc; outline-offset: 2px; }
-  .locker-inside { /* 扉の奥の箱 */
+  .locker span, .locker img { position: absolute; display: block; }
+  .locker img { width: 100%; height: 100%; pointer-events: none; }
+  .locker-inside { inset: 1.5%; overflow: hidden; background: #3a291e; } /* 扉の奥の箱。壁は JS が遠近で描く */
+  .locker-inside i { position: absolute; inset: 0; }
+  .locker-inside::after { /* 入口の縁に落ちる影 */
+    content: "";
     position: absolute;
-    inset: 2%;
-    background:
-      linear-gradient(180deg, rgba(0, 0, 0, 0.4), transparent 28%, transparent 82%, rgba(255, 225, 190, 0.1) 84%),
-      linear-gradient(90deg, rgba(0, 0, 0, 0.3), transparent 22%, transparent 80%, rgba(0, 0, 0, 0.22)),
-      #47321f;
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35), inset 5px 7px 12px rgba(0, 0, 0, 0.5);
+    inset: 0;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.45), inset 3px 5px 9px rgba(0, 0, 0, 0.55);
   }
+  .locker-cast { /* 開いた扉が右の壁に落とす影 */
+    left: 100%;
+    top: 2%;
+    width: 42%;
+    height: 98%;
+    background: linear-gradient(90deg, rgba(70, 35, 15, 0.32), rgba(70, 35, 15, 0));
+    opacity: 0;
+    transition: opacity 0.5s ease;
+  }
+  .locker.open .locker-cast { opacity: 1; transition: opacity 0.9s ease 0.2s; }
   .locker-door {
-    position: absolute;
     inset: 0;
     transform-origin: 100% 50%; /* 蝶番は右側 */
     transform-style: preserve-3d;
-    transition: transform 0.75s cubic-bezier(0.3, 1.15, 0.45, 1);
+    transition: transform 0.55s cubic-bezier(0.55, 0, 0.85, 0.45); /* 閉じるときは加速してパタンと当たる */
   }
-  .locker.open .locker-door { transform: rotateY(112deg); }
-  .locker-front, .locker-back {
-    position: absolute;
+  .locker.open .locker-door {
+    transform: rotateY(108deg);
+    transition: transform 1s cubic-bezier(0.22, 0.75, 0.3, 1.04);
+  }
+  .locker-front, .locker-back, .locker-edge {
     inset: 0;
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
   }
+  .locker-front { transform-style: preserve-3d; }
   .locker-front::after { /* 開くにつれて扉の表が暗くなる */
     content: "";
     position: absolute;
     inset: 0;
-    background: rgba(60, 30, 15, 0.35);
+    background: rgba(60, 30, 15, 0.4);
     opacity: 0;
-    transition: opacity 0.75s ease;
+    transition: opacity 0.55s ease;
   }
-  .locker.open .locker-front::after { opacity: 1; }
-  .locker-back { /* 扉の裏 */
-    transform: rotateY(180deg);
-    background: linear-gradient(90deg, #c4ab88, #e0cfb1);
-    box-shadow: inset 0 0 0 1.5px rgba(170, 95, 60, 0.55), 0 3px 10px rgba(70, 35, 15, 0.3);
+  .locker.open .locker-front::after { opacity: 1; transition: opacity 1s ease; }
+  .locker-edge { /* 扉の厚み(開く側の縁) */
+    left: 0;
+    right: auto;
+    width: var(--t, 4px);
+    transform-origin: 0 50%;
+    transform: rotateY(90deg);
+    background: linear-gradient(90deg, #b99d78, #d9c6a5);
+    -webkit-backface-visibility: visible;
+    backface-visibility: visible;
+  }
+  .locker-back { /* 扉の裏。錠の受けの金具が付いている */
+    transform: translateZ(calc(var(--t, 4px) * -1)) rotateY(180deg);
+    background:
+      linear-gradient(90deg, rgba(80, 45, 20, 0.28), rgba(80, 45, 20, 0) 40%, rgba(255, 245, 225, 0.18)),
+      #dccaa9;
+    box-shadow: inset 0 0 0 1px rgba(150, 100, 60, 0.45), inset 0 0 0 5px rgba(255, 246, 228, 0.25);
+  }
+  .locker-bolt {
+    width: 15%;
+    height: 9%;
+    border-radius: 2px;
+    background: linear-gradient(180deg, #e6c98a, #a98341 60%, #8a6630);
+    box-shadow: 0 1px 2px rgba(60, 30, 10, 0.45);
+  }
+  .locker-key { transition: transform 0.24s ease-in-out; }
+  .locker.turned .locker-key { transform: scaleX(0.18); } /* 鍵を90度回す(横から見る形になる) */
+  .locker-tag, .locker-tag > span { inset: 0; }
+  .locker-tag > span { transform-style: preserve-3d; }
+  .locker.jolt .locker-tag { animation: tag-jolt 0.9s ease-out; }             /* 鍵を回したとき、輪がねじれて札がくるっと揺れる */
+  .locker.swing-open .locker-tag > span { animation: tag-open 1.9s linear; }  /* 開いて止まった勢いで札が手前へ跳ねる */
+  .locker.swing-close .locker-tag > span { animation: tag-close 1.2s linear; } /* 閉じる勢いで浮いて、当たって跳ねる */
+  @keyframes tag-jolt {
+    0% { transform: rotate(0); }
+    20% { transform: rotate(-11deg); }
+    45% { transform: rotate(7deg); }
+    70% { transform: rotate(-3deg); }
+    100% { transform: rotate(0); }
+  }
+  @keyframes tag-open {
+    0% { transform: rotateX(0) rotate(0); }
+    35% { transform: rotateX(4deg) rotate(-3deg); }
+    50% { transform: rotateX(42deg) rotate(5deg); animation-timing-function: ease-in; }
+    62% { transform: rotateX(6deg) rotate(-4deg); animation-timing-function: ease-out; }
+    72% { transform: rotateX(18deg) rotate(3deg); animation-timing-function: ease-in; }
+    82% { transform: rotateX(2deg) rotate(-1.5deg); animation-timing-function: ease-out; }
+    90% { transform: rotateX(6deg) rotate(1deg); }
+    100% { transform: rotateX(0) rotate(0); }
+  }
+  @keyframes tag-close {
+    0% { transform: rotateX(0); animation-timing-function: ease-out; }
+    30% { transform: rotateX(30deg); animation-timing-function: ease-in; }
+    46% { transform: rotateX(0) rotate(-4deg); animation-timing-function: ease-out; }
+    60% { transform: rotateX(14deg) rotate(3deg); animation-timing-function: ease-in; }
+    74% { transform: rotateX(0) rotate(-1.5deg); animation-timing-function: ease-out; }
+    85% { transform: rotateX(4deg); }
+    100% { transform: rotateX(0) rotate(0); }
   }
   @media (prefers-reduced-motion: reduce) {
-    .locker-door, .locker-front::after { transition: none; }
+    .locker-door, .locker.open .locker-door, .locker-front::after, .locker-key, .locker-cast { transition: none !important; }
+    .locker .locker-tag, .locker .locker-tag > span { animation: none !important; }
   }
   .dial-status {
     position: absolute;
@@ -404,7 +470,7 @@
     img.alt = open.alt;
     img.src = open.src;
     document.title = "Works (2022~) | Shih TingFang 施婷方 | Portfolio";
-    buildLockers(open.src);
+    buildLockers();
     function show() {
       frame.classList.remove("phone-zoom");
       frame.classList.add("opened");
@@ -423,29 +489,131 @@
     [888, 747, 1040, 961],
     [667, 962, 887, 1176]
   ];
-  function buildLockers(src) {
+  var EYE = [558, 1000]; // 箱の奥を描くときの消失点(画面の中央あたりから見ている)
+  var DEPTH = 0.86;      // 奥の壁の大きさ(消失点に向かって縮める割合)
+
+  function pct(v, total) { return (v / total * 100) + "%"; }
+  function polygon(pts) {
+    return "polygon(" + pts.map(function (p) { return p[0] + "% " + p[1] + "%"; }).join(",") + ")";
+  }
+  // 箱の中: 奥の壁と上下左右の壁を、消失点から見た遠近で塗り分ける
+  function insideWalls(b) {
+    var x0 = b[0] + (b[2] - b[0]) * 0.015, x1 = b[2] - (b[2] - b[0]) * 0.015;
+    var y0 = b[1] + (b[3] - b[1]) * 0.015, y1 = b[3] - (b[3] - b[1]) * 0.015;
+    function back(x, y) {
+      return [(EYE[0] + (x - EYE[0]) * DEPTH - x0) / (x1 - x0) * 100,
+              (EYE[1] + (y - EYE[1]) * DEPTH - y0) / (y1 - y0) * 100];
+    }
+    var tl = back(x0, y0), tr = back(x1, y0), br = back(x1, y1), bl = back(x0, y1);
+    var walls = [
+      [[[0, 0], [100, 0], tr, tl], "linear-gradient(180deg, #1c120c, #33231a)"],          // 天井(影)
+      [[[0, 100], [100, 100], br, bl], "linear-gradient(0deg, #9a7b5f, #6b513e)"],        // 床(光が当たる)
+      [[[0, 0], tl, bl, [0, 100]], "linear-gradient(90deg, #6a4f3b, #4a3627)"],           // 左の壁
+      [[[100, 0], tr, br, [100, 100]], "linear-gradient(270deg, #24180f, #36261b)"],      // 右の壁(蝶番側、扉の影)
+      [[tl, tr, br, bl], "radial-gradient(ellipse at 45% 75%, #574030, #35261b)"]         // 奥の壁
+    ];
+    return walls.map(function (w) {
+      return '<i style="clip-path:' + polygon(w[0]) + ';background:' + w[1] + '"></i>';
+    }).join("");
+  }
+
+  // 音(鍵を回すカチッ・扉が閉まるパタン)。WebAudio のノイズを短く鳴らす
+  var actx = null;
+  function knock(freq, volume, len) {
+    try {
+      if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+      if (actx.state === "suspended") actx.resume();
+      var n = Math.floor(actx.sampleRate * len), buf = actx.createBuffer(1, n, actx.sampleRate), d = buf.getChannelData(0);
+      for (var i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 3);
+      var src = actx.createBufferSource(), f = actx.createBiquadFilter(), g = actx.createGain();
+      src.buffer = buf;
+      f.type = "bandpass";
+      f.frequency.value = freq;
+      f.Q.value = 1.5;
+      g.gain.value = volume;
+      src.connect(f);
+      f.connect(g);
+      g.connect(actx.destination);
+      src.start();
+    } catch (err) {}
+  }
+
+  function restart(el, cls) { // 同じアニメーションをもう一度最初から再生する
+    el.classList.remove(cls);
+    void el.offsetWidth;
+    el.classList.add(cls);
+  }
+
+  function buildLockers() {
+    var parts = {};
+    document.querySelectorAll("#worksSecret .locker-part").forEach(function (im) {
+      (parts[im.dataset.i] = parts[im.dataset.i] || {})[im.dataset.part] = im;
+    });
     var layer = document.createElement("div");
     layer.className = "locker-layer";
-    LOCKERS.forEach(function (b) {
+    LOCKERS.forEach(function (b, i) {
+      var p = parts[i];
+      if (!p) return;
       var w = b[2] - b[0], h = b[3] - b[1];
       var box = document.createElement("button");
       box.type = "button";
       box.className = "locker";
       box.setAttribute("aria-label", "私書箱");
       box.setAttribute("aria-expanded", "false");
-      box.style.left = (b[0] / 1116 * 100) + "%";
-      box.style.top = (b[1] / 2000 * 100) + "%";
-      box.style.width = (w / 1116 * 100) + "%";
-      box.style.height = (h / 2000 * 100) + "%";
-      box.innerHTML = '<span class="locker-inside"></span><span class="locker-door">' +
-        '<span class="locker-front"></span><span class="locker-back"></span></span>';
-      var front = box.querySelector(".locker-front");
-      front.style.backgroundImage = 'url("' + src + '")';
-      front.style.backgroundSize = (1116 / w * 100) + "% " + (2000 / h * 100) + "%";
-      front.style.backgroundPosition = (b[0] / (1116 - w) * 100) + "% " + (b[1] / (2000 - h) * 100) + "%";
+      box.style.left = pct(b[0], 1116);
+      box.style.top = pct(b[1], 2000);
+      box.style.width = pct(w, 1116);
+      box.style.height = pct(h, 2000);
+      var key = p.key.dataset, tag = p.tag.dataset;
+      function place(d) {
+        return "left:" + pct(+d.x, w) + ";top:" + pct(+d.y, h) + ";width:" + pct(+d.w, w) + ";height:" + pct(+d.h, h);
+      }
+      box.innerHTML =
+        '<span class="locker-inside">' + insideWalls(b) + '</span>' +
+        '<span class="locker-cast"></span>' +
+        '<span class="locker-door">' +
+          '<span class="locker-front"><img src="' + p.door.src + '" alt="">' +
+            '<span class="locker-key" style="' + place(key) + '"><img src="' + p.key.src + '" alt=""></span>' +
+            '<span class="locker-tag" style="' + place(tag) + ';transform-origin:' +
+              pct(tag.px - tag.x, +tag.w) + ' ' + pct(tag.py - tag.y, +tag.h) + '">' +
+              '<span style="transform-origin:inherit"><img src="' + p.tag.src + '" alt=""></span></span>' +
+          '</span>' +
+          '<span class="locker-edge"></span>' +
+          // 裏から見ると左右が逆なので、錠の受けは右寄りに付く
+          '<span class="locker-back"><span class="locker-bolt" style="right:' + pct(+key.x - w * 0.04, w) + ';top:' + pct(+key.y + key.h * 0.45, h) + '"></span></span>' +
+        '</span>';
+      var busy = false;
       box.addEventListener("click", function () {
-        var isOpen = box.classList.toggle("open");
-        box.setAttribute("aria-expanded", isOpen ? "true" : "false");
+        if (busy) return;
+        box.style.setProperty("--t", (box.offsetWidth * 0.05).toFixed(2) + "px"); // 扉の厚み(3D の奥行きは px で指定するため)
+        var opening = !box.classList.contains("open");
+        box.setAttribute("aria-expanded", opening ? "true" : "false");
+        if (reduceMotion) { box.classList.toggle("open", opening); box.classList.toggle("turned", opening); return; }
+        busy = true;
+        box.classList.add("moving");
+        if (opening) {
+          box.classList.add("turned");          // 鍵を回す
+          knock(2600, 0.5, 0.025);
+          restart(box, "jolt");
+          setTimeout(function () {
+            box.classList.add("open");          // 扉が開く
+            box.classList.remove("swing-close");
+            restart(box, "swing-open");
+            knock(700, 0.15, 0.08);
+          }, 260);
+          setTimeout(function () { busy = false; box.classList.remove("moving"); }, 1300);
+        } else {
+          box.classList.remove("open");         // 扉が閉まる
+          box.classList.remove("swing-open");
+          restart(box, "swing-close");
+          setTimeout(function () { knock(380, 0.7, 0.09); }, 520);
+          setTimeout(function () {
+            box.classList.remove("turned");     // 鍵を戻す
+            knock(2600, 0.4, 0.025);
+            restart(box, "jolt");
+          }, 820);
+          setTimeout(function () { busy = false; box.classList.remove("moving"); }, 1150);
+        }
       });
       layer.appendChild(box);
     });
@@ -473,6 +641,6 @@
   });
 })();
 </script>
-<script src="works-dial.js?v=12"></script>
+<script src="works-dial.js?v=13"></script>
 </body>
 </html>
