@@ -23,7 +23,7 @@
   var rotation = 0;
 
   var enc = null;
-  fetch("assets/works.enc.json?v=6").then(function (r) { return r.json(); }).then(function (d) {
+  fetch("assets/works.enc.json?v=7").then(function (r) { return r.json(); }).then(function (d) {
     enc = d;
     digitsNeeded = d.digits;
     renderDots();

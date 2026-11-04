@@ -192,6 +192,7 @@
   .locker-px { left: 0; top: 0; transform-origin: 0 0; } /* 中身は写真の px で置き、箱の大きさに合わせて縮める */
   .locker-front, .locker-back { left: 0; top: 0; transform-origin: 0 0; pointer-events: none; }
   .locker-back { visibility: hidden; }
+  .locker-under { visibility: hidden; }
   .locker.open .locker-back { pointer-events: auto; } /* 開いた扉をタップしても閉じる */
   .locker-edge { /* 扉の厚み(開く側の縁)。真横を向くほど太く見える */
     left: 0;
@@ -558,6 +559,8 @@
           '<span class="locker-inside" style="left:0;top:0;width:' + w + 'px;height:' + h + 'px"><img src="' + p.inside.src + '" alt=""></span>' +
           // 縁取りは棚のもので動かない(開いたデザインと同じ)。真ん中が抜けていて、箱の中が見える
           '<span class="locker-trim" style="left:0;top:0;width:' + w + 'px;height:' + h + 'px"><img src="' + p.frame.src + '" alt=""></span>' +
+          // 札の影は箱の下の段まで落ちているので、扉が動いている間は影のない画像をかぶせる
+          '<span class="locker-under" style="left:' + p.under.dataset.x + 'px;top:' + p.under.dataset.y + 'px;width:' + p.under.dataset.w + 'px;height:' + p.under.dataset.h + 'px"><img src="' + p.under.src + '" alt=""></span>' +
           '<span class="locker-edge"></span>' +
           '<span class="locker-back" style="width:' + od.w + 'px;height:' + od.h + 'px"><img src="' + p.opened.src + '" alt=""></span>' +
           '<span class="locker-front" style="width:' + iw + 'px;height:' + ih + 'px">' +
@@ -571,7 +574,7 @@
         '</span>';
       var pxEl = box.querySelector(".locker-px"), front = box.querySelector(".locker-front");
       var back = box.querySelector(".locker-back"), shade = box.querySelector(".locker-shade");
-      var edge = box.querySelector(".locker-edge");
+      var edge = box.querySelector(".locker-edge"), under = box.querySelector(".locker-under");
       var edgeSrc = [[0, 0], [10, 0], [10, 100], [0, 100]];
       // 開いたデザインの扉の四隅を、その画像(開いた扉の切り抜き)の中の座標で
       var ox = +od.x, oy = +od.y;
@@ -583,6 +586,7 @@
         angle = deg;
         pxEl.style.transform = "scale(" + (box.offsetWidth / w) + ")";
         var q = doorQuad(L, deg), dst = [q.ft, q.ht, q.hb, q.fb];
+        under.style.visibility = deg > 0.5 ? "visible" : "hidden";
         // 厚み: 開く側の辺の外側に、厚み × sin(角度) の幅で見える(90度までは左、そこからは右)。
         // 開いたデザインの扉には縁が見えないので、95度から開き切るまでに消す
         var fade = deg <= 95 ? 1 : Math.max(0, (OPEN_ANGLE - deg) / (OPEN_ANGLE - 95));
@@ -687,6 +691,6 @@
   });
 })();
 </script>
-<script src="works-dial.js?v=17"></script>
+<script src="works-dial.js?v=18"></script>
 </body>
 </html>
