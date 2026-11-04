@@ -189,6 +189,17 @@
   .locker-px { left: 0; top: 0; transform-origin: 0 0; } /* 中身は写真の px で置き、箱の大きさに合わせて縮める */
   .locker-front, .locker-back { left: 0; top: 0; transform-origin: 0 0; pointer-events: none; }
   .locker-back { visibility: hidden; }
+  .locker-edge { /* 扉の厚み(開く側の縁)。真横を向くほど太く見える */
+    left: 0;
+    top: 0;
+    width: 10px;
+    height: 100px;
+    transform-origin: 0 0;
+    background: linear-gradient(90deg, #d8c4a6, #efe2cc 45%, #cdb594);
+    box-shadow: inset 0 0 0 0.5px rgba(150, 105, 70, 0.4);
+    visibility: hidden;
+    pointer-events: none;
+  }
   .locker-shade { inset: 0; background: rgb(60, 30, 15); opacity: 0; } /* 扉の表が横を向くほど暗くなる */
   .locker-key { transition: transform 0.24s ease-in-out; }
   .locker.turned .locker-key { transform: scaleX(0.18); } /* 鍵を90度回す(横から見る形になる) */
@@ -423,6 +434,7 @@
     { box: [447, 962, 666, 1176], ht: [644, 976], hb: [644, 1172], ft: [736, 972], fb: [737, 1170] }
   ];
   var OPEN_ANGLE = 110; // 開いたデザインの扉の角度(度)
+  var THICK = 0.05;     // 扉の厚み(扉の幅に対する割合)
   var OPEN_MS = 950, CLOSE_MS = 520;
 
   function pct(v, total) { return (v / total * 100) + "%"; }
@@ -520,6 +532,7 @@
       box.innerHTML =
         '<span class="locker-px" style="width:' + w + 'px;height:' + h + 'px">' +
           '<span class="locker-inside" style="left:0;top:0;width:' + w + 'px;height:' + h + 'px"><img src="' + p.inside.src + '" alt=""></span>' +
+          '<span class="locker-edge"></span>' +
           '<span class="locker-back" style="width:' + od.w + 'px;height:' + od.h + 'px"><img src="' + p.opened.src + '" alt=""></span>' +
           '<span class="locker-front" style="width:' + w + 'px;height:' + h + 'px"><img src="' + p.door.src + '" alt="">' +
             '<span class="locker-key" style="' + place(key) + '"><img src="' + p.key.src + '" alt=""></span>' +
@@ -531,6 +544,8 @@
         '</span>';
       var pxEl = box.querySelector(".locker-px"), front = box.querySelector(".locker-front");
       var back = box.querySelector(".locker-back"), shade = box.querySelector(".locker-shade");
+      var edge = box.querySelector(".locker-edge");
+      var edgeSrc = [[0, 0], [10, 0], [10, 100], [0, 100]];
       // 開いたデザインの扉の四隅を、その画像(開いた扉の切り抜き)の中の座標で
       var ox = +od.x, oy = +od.y;
       var backSrc = [[L.ft[0] - b[0] - ox, L.ft[1] - b[1] - oy], [L.ht[0] - b[0] - ox, L.ht[1] - b[1] - oy],
@@ -541,6 +556,18 @@
         angle = deg;
         pxEl.style.transform = "scale(" + (box.offsetWidth / w) + ")";
         var q = doorQuad(L, deg), dst = [q.ft, q.ht, q.hb, q.fb];
+        // 厚み: 開く側の辺の外側に、厚み × sin(角度) の幅で見える(90度までは左、そこからは右)
+        var o = THICK * w * Math.sin(deg * Math.PI / 180);
+        if (o > 0.3) {
+          var side = deg < 90 ? -o : o, x0 = q.ft[0], x1 = q.ft[0] + side;
+          var xa = Math.min(x0, x1), xb = Math.max(x0, x1);
+          var xbB = Math.max(q.fb[0], q.fb[0] + side), xaB = Math.min(q.fb[0], q.fb[0] + side);
+          edge.style.visibility = "visible";
+          edge.style.transform = homography(edgeSrc, [[xa, q.ft[1]], [xb, q.ft[1]], [xbB, q.fb[1]], [xaB, q.fb[1]]]);
+          edge.style.filter = "brightness(" + (0.82 + 0.18 * Math.sin(deg * Math.PI / 180)).toFixed(3) + ")";
+        } else {
+          edge.style.visibility = "hidden";
+        }
         if (deg < 90) { // 表(閉じた扉)。横を向くほど暗く、細くなりすぎないよう最低2px
           if (Math.abs(dst[0][0] - dst[1][0]) < 2) { dst[0] = [dst[1][0] - 2, dst[0][1]]; dst[3] = [dst[2][0] - 2, dst[3][1]]; }
           front.style.visibility = "visible";
