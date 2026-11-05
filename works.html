@@ -217,7 +217,7 @@
   .locker-key { transition: transform 0.24s ease-in-out; }
   .locker-tag, .locker-tag > span { inset: 0; }
   .locker.jolt .locker-tag { animation: tag-jolt 0.9s ease-out; }               /* 鍵を回したとき、輪がねじれて札がくるっと揺れる */
-  .locker.swing-open .locker-tag > span { animation: tag-open 0.45s linear forwards; }   /* 扉が動き出すと遅れて浮く */
+  .locker.swing-open .locker-tag > span { animation: tag-open 0.3s linear forwards; }   /* 扉が動き出すと遅れて浮く */
   .locker.swing-close .locker-tag > span { animation: tag-close 1.1s linear; }  /* 閉じる勢いで浮いて、当たって跳ねる */
   @keyframes tag-jolt {
     0% { transform: rotate(0); }
@@ -459,7 +459,7 @@
   // 開いたデザインの5枚の扉(板の大きさで回したもの)から求めた、写真を撮ったカメラ(目の位置と距離。写真の px)
   var CAMERA = { x: 300, y: 1100, d: 3000 };
   var THICK = 0.05;     // 扉の厚み(扉の幅に対する割合)
-  var OPEN_MS = 650, CLOSE_MS = 560;
+  var OPEN_MS = 420, CLOSE_MS = 560;
 
   function pct(v, total) { return (v / total * 100) + "%"; }
 
@@ -721,7 +721,7 @@
               busy = false;
               box.classList.remove("moving");
             });
-          }, 120);
+          }, 60);
         } else {
           box.classList.remove("swing-open");
           box.classList.remove("turned");       // 鍵は閉め始めに戻しておく(閉まる扉の鍵が細く見えないように)
