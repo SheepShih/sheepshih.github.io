@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bentham&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Iosevka+Charon:wght@700&text=%23012345&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="pc-deco.css?v=46">
 <style>
   :root { --diner-bg: #DF9079; --paper: #F5E9CA; }
@@ -214,6 +215,18 @@
     pointer-events: none;
   }
   .locker-panel { inset: 0; }
+  .locker .locker-label { /* 名札の番号。扉と一緒に回る(閉じて止まっている間はキャンバスに描く) */
+    width: 0;
+    height: 0;
+    font: 700 19.43px "Iosevka Charon", monospace;
+    color: #bf603c;
+    line-height: 0;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
   .locker-key { transition: transform 0.24s ease-in-out; }
   .locker-tag, .locker-tag > span { inset: 0; }
   .locker.jolt .locker-tag { animation: tag-jolt 0.9s ease-out; }               /* 鍵を回したとき、輪がねじれて札がくるっと揺れる */
@@ -446,20 +459,22 @@
     (img.decode ? img.decode() : Promise.resolve()).then(show, show);
   });
 
-  // 鍵(札)の掛かった私書箱。店内の画像(1116×2000)での位置 [左, 上, 右, 下] と、
+  // 鍵(札)の掛かった私書箱。名札の番号(no)とその中心(label)、店内の画像(1116×2000)での位置 [左, 上, 右, 下] と、
   // 開いたデザインでの扉の四隅(蝶番側の上・下、開く側の上・下)
   var LOCKERS = [
-    { box: [667, 205, 887, 428], ht: [866, 212], hb: [866, 414], ft: [969, 157], fb: [971, 370] },
-    { box: [447, 429, 666, 746], ht: [644, 440], hb: [644, 736], ft: [736, 404], fb: [736, 706] },
-    { box: [227, 747, 446, 961], ht: [419, 760], hb: [419, 951], ft: [500, 749], fb: [500, 951] },
-    { box: [667, 747, 887, 961], ht: [868, 760], hb: [868, 951], ft: [971, 745], fb: [971, 951] },
-    { box: [447, 962, 666, 1176], ht: [644, 976], hb: [644, 1172], ft: [736, 972], fb: [737, 1170] }
+    { no: "#01", label: [781.5, 255.6], box: [667, 205, 887, 428], ht: [866, 212], hb: [866, 414], ft: [969, 157], fb: [971, 370] },
+    { no: "#02", label: [559.4, 477.8], box: [447, 429, 666, 746], ht: [644, 440], hb: [644, 736], ft: [736, 404], fb: [736, 706] },
+    { no: "#03", label: [337.3, 791.7], box: [227, 747, 446, 961], ht: [419, 760], hb: [419, 951], ft: [500, 749], fb: [500, 951] },
+    { no: "#04", label: [781.5, 791.7], box: [667, 747, 887, 961], ht: [868, 760], hb: [868, 951], ft: [971, 745], fb: [971, 951] },
+    { no: "#05", label: [559.4, 1006.9], box: [447, 962, 666, 1176], ht: [644, 976], hb: [644, 1172], ft: [736, 972], fb: [737, 1170] }
   ];
   var OPEN_ANGLE = 113; // 開いたデザインの扉の角度(度)
   // 開いたデザインの5枚の扉(板の大きさで回したもの)から求めた、写真を撮ったカメラ(目の位置と距離。写真の px)
   var CAMERA = { x: 300, y: 1100, d: 3000 };
   var THICK = 0.05;     // 扉の厚み(扉の幅に対する割合)
   var OPEN_MS = 420, CLOSE_MS = 360;
+  // 名札の番号の文字(Figma: Iosevka Charon Bold 7px。店内の画像の px では 7 × 1116/402)
+  var LABEL_FONT = '700 19.43px "Iosevka Charon", monospace', LABEL_COLOR = "#bf603c";
 
   function pct(v, total) { return (v / total * 100) + "%"; }
 
@@ -555,6 +570,15 @@
     function drawClean() {
       cctx.clearRect(0, 0, 1116, 2000);
       if (img.complete && img.naturalWidth) cctx.drawImage(img, 0, 0, 1116, 2000);
+      // 閉じて止まっている私書箱の名札の番号(動いている扉の番号は扉と一緒に回る .locker-label)
+      cctx.font = LABEL_FONT;
+      cctx.fillStyle = LABEL_COLOR;
+      cctx.textAlign = "center";
+      cctx.textBaseline = "middle";
+      boxes.forEach(function (bx) {
+        if (bx.el.classList.contains("open") || bx.el.classList.contains("moving")) return;
+        cctx.fillText(bx.no, bx.label[0], bx.label[1]);
+      });
       boxes.forEach(function (bx) {
         if (!bx.el.classList.contains("open") && !bx.el.classList.contains("moving")) return;
         if (bx.img.complete) cctx.drawImage(bx.img, bx.x, bx.y);
@@ -614,6 +638,7 @@
           '<span class="locker-hang" style="' + placeBox(p.hang.dataset) + '"><img src="' + p.hang.src + '" alt=""></span>' +
           '<span class="locker-front" style="width:' + iw + 'px;height:' + ih + 'px">' +
             '<span class="locker-panel"><img src="' + p.panel.src + '" alt=""></span>' +
+            '<span class="locker-label" style="left:' + (L.label[0] - L.inner[0]) + 'px;top:' + (L.label[1] - L.inner[1]) + 'px">' + L.no + '</span>' +
             '<span class="locker-key" style="' + placePx(key) + '"><img src="' + p.key.src + '" alt=""></span>' +
             '<span class="locker-tag" style="' + placePx(tag) + ';transform-origin:' +
               pct(tag.px - tag.x, +tag.w) + ' ' + pct(tag.py - tag.y, +tag.h) + '">' +
@@ -738,7 +763,7 @@
       else window.addEventListener("resize", function () { render(angle); });
       var cd = p.clean.dataset, wd = p.wallshadow.dataset;
       me = { el: box, img: p.clean, x: b[0] + +cd.x, y: b[1] + +cd.y, inside: p.inside, bx: b[0], by: b[1],
-             ws: p.wallshadow, wx: b[0] + +wd.x, wy: b[1] + +wd.y, k: 0, reach: 0 };
+             ws: p.wallshadow, wx: b[0] + +wd.x, wy: b[1] + +wd.y, k: 0, reach: 0, no: L.no, label: L.label };
       boxes.push(me);
       layer.appendChild(box);
     });
@@ -749,6 +774,7 @@
       [bx.img, bx.inside, bx.ws].forEach(function (im) { if (!im.complete) im.addEventListener("load", queueDraw); });
     });
     img.addEventListener("load", drawClean);
+    if (document.fonts && document.fonts.load) document.fonts.load(LABEL_FONT, "#012345").then(queueDraw, function () {}); // 番号の字が届いたら描き直す
     drawClean();
     frame.querySelector(".works-scene").appendChild(layer);
   }
