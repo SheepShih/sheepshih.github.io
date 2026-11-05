@@ -6,61 +6,40 @@
 <title>Shih TingFang 施婷方 | Portfolio</title>
 <link rel="icon" type="image/png" href="assets/img/favicon.png?v=1">
 <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png?v=1">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bentham&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=21">
-<link rel="stylesheet" href="pc-deco.css?v=46">
+<!-- 音楽を止めないための外枠。各ページはこの中の iframe で開き、ページを移っても
+     この枠(と音楽)はそのまま残る。アドレスは #about のように今のページに合わせる -->
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #DF9079; }
+  #page { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+</style>
 </head>
 <body>
+<iframe id="page" title="Shih TingFang 施婷方 | Portfolio"></iframe>
+<script>
+(function () {
+  var PAGES = { about: 1, works: 1, play: 1 };
+  var frame = document.getElementById("page");
+  function pageFor(hash) {
+    var name = hash.slice(1);
+    return (PAGES[name] ? name : "home") + ".html";
+  }
+  frame.src = pageFor(location.hash) + location.search;
+  // アドレスの # だけ書き換えられたとき(#about → #works など)も中のページを切り替える
+  window.addEventListener("hashchange", function () {
+    frame.contentWindow.location.replace(pageFor(location.hash));
+  });
 
-<div class="phone-frame">
-
-  <!-- ドア開閉スクロールアニメーション -->
-  <div class="door-stage" id="doorStage">
-    <div class="door-sticky">
-      <div class="door-center">
-        <div class="door-viewport">
-          <div class="door-frames" id="doorFrames">
-            <img class="door-frame active" data-i="0" src="assets/img/front01.webp" alt="お店のドア（閉）">
-            <img class="door-frame"        data-i="1" src="assets/img/front02.webp" alt="">
-            <img class="door-frame"        data-i="2" src="assets/img/front04.webp" alt="">
-            <img class="door-frame"        data-i="3" src="assets/img/front05.webp" alt="">
-            <img class="door-frame"        data-i="4" src="assets/img/front06.webp" alt="">
-            <img class="door-frame"        data-i="5" src="assets/img/front07.webp" alt="">
-            <img class="door-frame"        data-i="6" src="assets/img/front08.webp" alt="">
-            <img class="door-frame"        data-i="7" src="assets/img/front09.webp" alt="">
-            <img class="door-frame"        data-i="8" src="assets/img/front10.webp" alt="">
-            <img class="door-frame"        data-i="9" src="assets/img/interior.webp?v=2" alt="お店の中（ダイナー内観）">
-          </div>
-
-          <button class="hamburger-menu" id="hamburgerMenu" type="button" aria-label="メニューを開く" aria-expanded="false">
-            <img class="burger-img burger-closed" src="assets/img/hamburger-menu.webp" alt="">
-            <img class="burger-img burger-open"   src="assets/img/hamburger-menu-open.webp?v=2" alt="">
-          </button>
-
-          <nav class="menu-overlay" id="menuOverlay" aria-hidden="true">
-            <ul class="menu-list">
-              <li><a href="about.html">About</a></li>
-              <li><a href="https://sheepshih.studio.site/" target="_blank" rel="noopener">Works <span class="menu-note">(~2022)</span></a></li>
-              <li><a href="works.html">Works <span class="menu-note">(2022~)</span></a></li>
-              <li><a href="play.html">Play</a></li>
-            </ul>
-          </nav>
-        </div>
-
-        <div class="scroll-hint">
-          <p class="scroll-text">scroll</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-</div>
-
-<!-- PC幅のみの装飾は pc-deco.js が注入する(index/about共通) -->
-<script src="pc-deco.js?v=28"></script>
-<script src="bgm.js?v=1"></script>
-<script src="script.js?v=10"></script>
+  // 中のページが変わったら、アドレスとタブの名前を合わせる
+  frame.addEventListener("load", function () {
+    var w = frame.contentWindow, name;
+    try { name = w.location.pathname.split("/").pop().replace(/\.html$/, ""); } catch (e) { return; }
+    var hash = PAGES[name] ? "#" + name : "";
+    if (location.hash !== hash) history.replaceState(null, "", location.pathname + location.search + hash);
+    try { document.title = w.document.title; } catch (e) {}
+    frame.focus(); // キーボード(ダイヤルの数字キーなど)がすぐ中のページに届くように
+  });
+})();
+</script>
+<script src="bgm.js?v=2"></script>
 </body>
 </html>

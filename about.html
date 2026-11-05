@@ -2,6 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<script>if (window.top === window) location.replace("./" + location.search + "#about"); /* 単独で開かれたら音楽の枠(index.html)の中で開き直す */</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>About | Shih TingFang 施婷方 | Portfolio</title>
 <link rel="icon" type="image/png" href="assets/img/favicon.png?v=1">
@@ -192,7 +193,7 @@
 
     <img class="figure-timeline" src="assets/img/figure-timeline.webp" alt="">
 
-    <a class="back-top-btn" id="backTopBtn" href="index.html">Back to the restaurant</a>
+    <a class="back-top-btn" id="backTopBtn" href="home.html">Back to the restaurant</a>
 
   </div>
 </div>
@@ -202,7 +203,6 @@
 
 <!-- PC幅のみの装飾は pc-deco.js が注入する(index/about共通) -->
 <script src="pc-deco.js?v=28"></script>
-<script src="bgm.js?v=1"></script>
 
 <script>
 // 402px基準のFigmaデザインを、topページのドア画像と同じサイズの枠内に表示

@@ -2,6 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<script>if (window.top === window) location.replace("./" + location.search + "#play"); /* 単独で開かれたら音楽の枠(index.html)の中で開き直す */</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Play | Shih TingFang 施婷方 | Portfolio</title>
 <link rel="icon" type="image/png" href="assets/img/favicon.png?v=1">
@@ -481,7 +482,6 @@
 
 <!-- PC幅のみの装飾は pc-deco.js が注入する(index/about/works/play共通) -->
 <script src="pc-deco.js?v=28"></script>
-<script src="bgm.js?v=1"></script>
 
 <script>
 (function () {
@@ -789,7 +789,7 @@
   }, true);
 
   // スクリーン内のタップ = 次の作品へ / ボタンはリンク / それ以外のシーンはトップへ戻る
-  var goHome = function () { window.location.href = "index.html"; };
+  var goHome = function () { window.location.href = "home.html"; };
   frame.addEventListener("click", function (e) {
     if (e.target.closest(".play-links, .screen-zone")) return;
     if (e.target.closest(".screen-tap, .play-app-icon")) { switchProject(1); return; }
