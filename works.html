@@ -189,6 +189,8 @@
     user-select: none;
   }
   .locker.open, .locker.moving { z-index: 1; }
+  /* 閉じて止まっている間は部品を出さず、店内の画像そのものを見せる(部品とのわずかなずれが見えないように) */
+  .locker:not(.open):not(.moving) .locker-px { visibility: hidden; }
   .locker:focus-visible { outline: 2px solid #fff6dc; outline-offset: 2px; }
   .locker span, .locker img { position: absolute; display: block; }
   .locker img { width: 100%; height: 100%; pointer-events: none; }
@@ -689,7 +691,8 @@
           animate(0, CLOSE_MS, easeIn, function () { // 扉が閉まる(加速してパタンと当たる)
             knock(380, 0.7, 0.09);
             restart(box, "swing-close");
-            setTimeout(function () { busy = false; box.classList.remove("moving"); }, 650);
+            setTimeout(function () { busy = false; }, 650);
+            setTimeout(function () { if (!box.classList.contains("open")) box.classList.remove("moving"); }, 1150); // 札の揺れが収まってから
           });
         }
       });
@@ -722,6 +725,6 @@
   });
 })();
 </script>
-<script src="works-dial.js?v=33"></script>
+<script src="works-dial.js?v=34"></script>
 </body>
 </html>
