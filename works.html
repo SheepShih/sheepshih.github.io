@@ -459,7 +459,7 @@
   // 開いたデザインの5枚の扉(板の大きさで回したもの)から求めた、写真を撮ったカメラ(目の位置と距離。写真の px)
   var CAMERA = { x: 300, y: 1100, d: 3000 };
   var THICK = 0.05;     // 扉の厚み(扉の幅に対する割合)
-  var OPEN_MS = 420, CLOSE_MS = 560;
+  var OPEN_MS = 420, CLOSE_MS = 360;
 
   function pct(v, total) { return (v / total * 100) + "%"; }
 
@@ -728,7 +728,7 @@
           animate(0, CLOSE_MS, easeIn, function () { // 扉が閉まる(加速してパタンと当たる)
             knock(380, 0.7, 0.09);
             restart(box, "swing-close");
-            setTimeout(function () { busy = false; }, 650);
+            setTimeout(function () { busy = false; }, 400);
             setTimeout(function () { if (!box.classList.contains("open")) box.classList.remove("moving"); }, 1150); // 札の揺れが収まってから
           });
         }
