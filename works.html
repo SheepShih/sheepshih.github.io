@@ -206,7 +206,6 @@
     pointer-events: none;
   }
   .locker-panel { inset: 0; }
-  .locker-shade { inset: 0; background: rgb(70, 40, 20); opacity: 0; } /* 扉の表が横を向くほど暗くなる */
   .locker-key { transition: transform 0.24s ease-in-out; }
   .locker-tag, .locker-tag > span { inset: 0; }
   .locker.jolt .locker-tag { animation: tag-jolt 0.9s ease-out; }               /* 鍵を回したとき、輪がねじれて札がくるっと揺れる */
@@ -571,20 +570,21 @@
           '<span class="locker-hang" style="' + placeBox(p.hang.dataset) + '"><img src="' + p.hang.src + '" alt=""></span>' +
           '<span class="locker-front" style="width:' + iw + 'px;height:' + ih + 'px">' +
             '<span class="locker-panel"><img src="' + p.panel.src + '" alt=""></span>' +
-            // 札が扉に落とす影(扉と一緒に動く)
-            '<span class="locker-tagshadow" style="' + placePx(p.tshadow.dataset) + '"><img src="' + p.tshadow.src + '" alt=""></span>' +
-            '<span class="locker-shade"></span>' +
             '<span class="locker-key" style="' + placePx(key) + '"><img src="' + p.key.src + '" alt=""></span>' +
             '<span class="locker-tag" style="' + placePx(tag) + ';transform-origin:' +
               pct(tag.px - tag.x, +tag.w) + ' ' + pct(tag.py - tag.y, +tag.h) + '">' +
-              '<span style="transform-origin:inherit"><img src="' + p.tag.src + '" alt=""></span></span>' +
+              '<span style="transform-origin:inherit">' +
+                // 札が扉に落とす影。札と一緒に揺れる(扉に残ると、揺れたときに影だけが残って見える)
+                '<span class="locker-tagshadow" style="left:' + (p.tshadow.dataset.x - tag.x) + 'px;top:' + (p.tshadow.dataset.y - tag.y) +
+                  'px;width:' + p.tshadow.dataset.w + 'px;height:' + p.tshadow.dataset.h + 'px"><img src="' + p.tshadow.src + '" alt=""></span>' +
+                '<img src="' + p.tag.src + '" alt=""></span></span>' +
           '</span>' +
         '</span>';
       var pxEl = box.querySelector(".locker-px"), front = box.querySelector(".locker-front");
-      var back = box.querySelector(".locker-back"), shade = box.querySelector(".locker-shade");
+      var back = box.querySelector(".locker-back");
       var edge = box.querySelector(".locker-edge"), under = box.querySelector(".locker-under");
       var wallShadow = box.querySelector(".locker-wallshadow"), hang = box.querySelector(".locker-hang");
-      var keyEl = box.querySelector(".locker-key"), tagEl = box.querySelector(".locker-tag"), hangAt = +p.hang.dataset.fy; // 札が下がる位置(開く側の辺の上からの割合)
+      var tagEl = box.querySelector(".locker-tag"), hangAt = +p.hang.dataset.fy; // 札が下がる位置(開く側の辺の上からの割合)
       var edgeSrc = [[0, 0], [10, 0], [10, 100], [0, 100]];
       // 開いたデザインの扉の四隅を、その画像(開いた扉の切り抜き)の中の座標で
       var ox = +od.x, oy = +od.y;
@@ -633,9 +633,8 @@
           front.style.visibility = "visible";
           back.style.visibility = "hidden";
           front.style.transform = homography(frontSrc, dst);
-          shade.style.opacity = (0.16 * Math.sin(deg * Math.PI / 180)).toFixed(3);
-          // 鍵と札も扉と同じだけ暗くする(扉の外にはみ出した札の先まで同じに)
-          keyEl.style.filter = tagEl.style.filter = "brightness(" + (1 - 0.13 * Math.sin(deg * Math.PI / 180)).toFixed(3) + ")";
+          // 扉は横を向くほど暗く。扉・鍵・札をまとめて同じだけ暗くするので、境目に色の差が出ない
+          front.style.filter = deg > 0.5 ? "brightness(" + (1 - 0.14 * Math.sin(deg * Math.PI / 180)).toFixed(3) + ")" : "";
         } else { // 裏(開いたデザインの扉)。開き切ると写真と同じ位置・形
           if (Math.abs(dst[0][0] - dst[1][0]) < 2) { dst[0] = [dst[1][0] + 2, dst[0][1]]; dst[3] = [dst[2][0] + 2, dst[3][1]]; }
           front.style.visibility = "hidden";
@@ -720,6 +719,6 @@
   });
 })();
 </script>
-<script src="works-dial.js?v=28"></script>
+<script src="works-dial.js?v=29"></script>
 </body>
 </html>
