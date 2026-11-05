@@ -169,6 +169,7 @@
   /* 店内では、画像も私書箱の部品も、写真(1116×2000)と同じ縦横比の箱に上から合わせて置く。
      枠と写真の縦横比がわずかに違うので、object-fit の中央合わせのままだと部品と1pxほどずれる */
   .works-frame.opened .works-img { object-position: 50% 0; }
+  .works-frame.opened { cursor: default; } /* 店内ではトップへ戻らない */
 
   /* 店内の、鍵の掛かった私書箱。タップで鍵が回り、扉が手前へ開いて、開いたデザイン(node 365-240)の形で止まる。
      回るのはオレンジの縁取りの内側の板だけ(縁取りは棚のもの)。板は写真のカメラから見た 3D の回転で JS が動かし(射影変換)、
@@ -435,6 +436,7 @@
     function show() {
       frame.classList.remove("phone-zoom");
       frame.classList.add("opened");
+      frame.removeAttribute("role"); frame.removeAttribute("aria-label"); // 店内ではトップへ戻るリンクではない
       if (reduceMotion) return;
       frame.classList.add("melt-wait");
       skipMelt = false;
@@ -762,15 +764,16 @@
     if (frame.classList.contains("phone-zoom")) { frame.classList.remove("phone-zoom"); return; }
     if (e.target.closest(".phone-tap")) { finishMelt(); frame.classList.add("phone-zoom"); return; }
     if (e.target.closest(".locker")) return; // 私書箱は扉を開け閉めするだけ
+    if (frame.classList.contains("opened")) return; // 店内では私書箱以外をタップしても何もしない
     goHome();
   });
   frame.addEventListener("keydown", function (e) {
     if (e.key === "Escape") { frame.classList.remove("phone-zoom"); return; }
-    if (e.target.closest(".locker")) return;
+    if (e.target.closest(".locker") || frame.classList.contains("opened")) return;
     if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goHome(); }
   });
 })();
 </script>
-<script src="works-dial.js?v=39"></script>
+<script src="works-dial.js?v=40"></script>
 </body>
 </html>
