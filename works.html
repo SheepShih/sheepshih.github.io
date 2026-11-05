@@ -166,13 +166,16 @@
   #worksSecret { display: none; }
   .works-frame.opened .dial-layer { display: none; }
   .works-frame.opened .works-scene { transform: none; transition: none; }
+  /* 店内では、画像も私書箱の部品も、写真(1116×2000)と同じ縦横比の箱に上から合わせて置く。
+     枠と写真の縦横比がわずかに違うので、object-fit の中央合わせのままだと部品と1pxほどずれる */
+  .works-frame.opened .works-img { object-position: 50% 0; }
 
   /* 店内の、鍵の掛かった私書箱。タップで鍵が回り、扉が手前へ開いて、開いたデザイン(node 365-240)の形で止まる。
      回るのはオレンジの縁取りの内側の板だけ(縁取りは棚のもの)。板は写真のカメラから見た 3D の回転で JS が動かし(射影変換)、
      開き切ると開いたデザインの扉とぴったり重なる。
      90度までは閉じた扉の表(鍵と札つき)、そこからは開いたデザインの扉(裏・札つき)を同じ四隅に貼る。
      画像はすべて暗号化された中身に入っている。位置は下の LOCKERS */
-  .locker-layer { position: absolute; inset: 0; display: none; }
+  .locker-layer { position: absolute; left: 0; top: 0; width: 100%; aspect-ratio: 1116 / 2000; display: none; }
   .works-frame.opened .locker-layer { display: block; }
   .works-frame.melt-wait .locker-layer,
   .works-frame.melting .locker-layer { visibility: hidden; }
@@ -719,6 +722,6 @@
   });
 })();
 </script>
-<script src="works-dial.js?v=31"></script>
+<script src="works-dial.js?v=33"></script>
 </body>
 </html>
