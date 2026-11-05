@@ -456,7 +456,7 @@
   // 開いたデザインの5枚の扉(板の大きさで回したもの)から求めた、写真を撮ったカメラ(目の位置と距離。写真の px)
   var CAMERA = { x: 300, y: 1100, d: 3000 };
   var THICK = 0.05;     // 扉の厚み(扉の幅に対する割合)
-  var OPEN_MS = 1150, CLOSE_MS = 560;
+  var OPEN_MS = 650, CLOSE_MS = 560;
 
   function pct(v, total) { return (v / total * 100) + "%"; }
 
@@ -718,7 +718,7 @@
               busy = false;
               box.classList.remove("moving");
             });
-          }, 260);
+          }, 120);
         } else {
           box.classList.remove("swing-open");
           box.classList.remove("turned");       // 鍵は閉め始めに戻しておく(閉まる扉の鍵が細く見えないように)
@@ -771,6 +771,6 @@
   });
 })();
 </script>
-<script src="works-dial.js?v=38"></script>
+<script src="works-dial.js?v=39"></script>
 </body>
 </html>
