@@ -539,20 +539,43 @@
     });
     var layer = document.createElement("div");
     layer.className = "locker-layer";
-    // 開いている・動いている私書箱の鍵・札・影を消す(鍵なしの店内を上から描く)。店内の画像と同じ大きさの
-    // キャンバス1枚に描くので、私書箱ごとの小さな部品のように位置が丸められてずれることがない
+    // 店内の画像と、開いている・動いている私書箱の鍵・札・影を消す部分(鍵なしの店内)を、同じキャンバス1枚に
+    // 描く。別々の要素に描くと、ブラウザによっては互いに1pxほどずれて、縁取りの線が段違いに見える
     var clean = document.createElement("canvas");
     clean.className = "locker-clean";
     clean.width = 1116;
     clean.height = 2000;
     layer.appendChild(clean);
     var cctx = clean.getContext("2d"), boxes = [];
+    var tmp = document.createElement("canvas"), tctx = tmp.getContext("2d");
+    // 動かないもの(店内・札の下を消す部分・箱の中・扉の右の壁の影)は、すべてこのキャンバスに描く
     function drawClean() {
       cctx.clearRect(0, 0, 1116, 2000);
+      if (img.complete && img.naturalWidth) cctx.drawImage(img, 0, 0, 1116, 2000);
       boxes.forEach(function (bx) {
         if (!bx.el.classList.contains("open") && !bx.el.classList.contains("moving")) return;
         if (bx.img.complete) cctx.drawImage(bx.img, bx.x, bx.y);
+        if (bx.inside.complete) cctx.drawImage(bx.inside, bx.bx, bx.by);
+        if (bx.k > 0 && bx.ws.complete) { // 扉の端に合わせて蝶番側から現れる壁の影(境目はぼかす)
+          var w = bx.ws.naturalWidth, h = bx.ws.naturalHeight;
+          tmp.width = w; tmp.height = h;
+          tctx.drawImage(bx.ws, 0, 0);
+          tctx.globalCompositeOperation = "destination-in";
+          var g = tctx.createLinearGradient(bx.reach, 0, bx.reach + 28, 0);
+          g.addColorStop(0, "#000"); g.addColorStop(1, "rgba(0,0,0,0)");
+          tctx.fillStyle = g; tctx.fillRect(0, 0, w, h);
+          tctx.globalCompositeOperation = "source-over";
+          cctx.globalAlpha = Math.min(1, bx.k * 1.4);
+          cctx.drawImage(tmp, bx.wx, bx.wy);
+          cctx.globalAlpha = 1;
+        }
       });
+    }
+    var drawQueued = false;
+    function queueDraw() {
+      if (drawQueued) return;
+      drawQueued = true;
+      requestAnimationFrame(function () { drawQueued = false; drawClean(); });
     }
     LOCKERS.forEach(function (L, i) {
       var p = parts[i];
@@ -578,13 +601,10 @@
       }
       box.innerHTML =
         '<span class="locker-px" style="width:' + w + 'px;height:' + h + 'px">' +
-          '<span class="locker-inside" style="left:0;top:0;width:' + w + 'px;height:' + h + 'px"><img src="' + p.inside.src + '" alt=""></span>' +
           // 縁取りは棚のもので動かない(開いたデザインと同じ)。真ん中が抜けていて、箱の中が見える
-          '<span class="locker-trim" style="left:0;top:0;width:' + w + 'px;height:' + h + 'px"><img src="' + p.frame.src + '" alt=""></span>' +
           // 札の影は箱の下の段まで落ちているので、扉が動いている間は影のない画像をかぶせる
           '<span class="locker-under" style="left:' + p.under.dataset.x + 'px;top:' + p.under.dataset.y + 'px;width:' + p.under.dataset.w + 'px;height:' + p.under.dataset.h + 'px"><img src="' + p.under.src + '" alt=""></span>' +
           // 開いた扉が右の壁に落とす影(開いたデザインから)。壁のものなので動かさず、開くにつれて濃くする
-          '<span class="locker-wallshadow" style="' + placeBox(p.wallshadow.dataset) + '"><img src="' + p.wallshadow.src + '" alt=""></span>' +
           '<span class="locker-edge"></span>' +
           '<span class="locker-back" style="width:' + od.w + 'px;height:' + od.h + 'px"><img src="' + p.opened.src + '" alt=""></span>' +
           // 開いた扉の端にぶら下がる鍵と札(開いたデザインから)。扉の端について動き、縦向きのまま下がる
@@ -604,7 +624,7 @@
       var pxEl = box.querySelector(".locker-px"), front = box.querySelector(".locker-front");
       var back = box.querySelector(".locker-back");
       var edge = box.querySelector(".locker-edge"), under = box.querySelector(".locker-under");
-      var wallShadow = box.querySelector(".locker-wallshadow"), hang = box.querySelector(".locker-hang");
+      var hang = box.querySelector(".locker-hang");
       var tagEl = box.querySelector(".locker-tag"), hangAt = +p.hang.dataset.fy; // 札が下がる位置(開く側の辺の上からの割合)
       var edgeSrc = [[0, 0], [10, 0], [10, 100], [0, 100]];
       // 開いたデザインの扉の四隅を、その画像(開いた扉の切り抜き)の中の座標で
@@ -612,7 +632,7 @@
       var backSrc = [[L.ft[0] - b[0] - ox, L.ft[1] - b[1] - oy], [L.ht[0] - b[0] - ox, L.ht[1] - b[1] - oy],
                      [L.hb[0] - b[0] - ox, L.hb[1] - b[1] - oy], [L.fb[0] - b[0] - ox, L.fb[1] - b[1] - oy]];
       var frontSrc = [[0, 0], [iw, 0], [iw, ih], [0, ih]];
-      var angle = 0;
+      var angle = 0, me = null;
       function render(deg) {
         angle = deg;
         pxEl.style.transform = "scale(" + (parseFloat(getComputedStyle(box).width) / w) + ")"; // 幅は丸めずに使う(offsetWidth は整数に丸められ、写真から1pxほどずれる)
@@ -635,11 +655,11 @@
         // 壁の影は開くにつれて濃く。ぶら下がる札は扉の端の同じ位置について動き、真横の前後(84〜92度)で扉の表の札と入れ替わる
         // 影は扉の端が右へ出ていくのに合わせて、蝶番側から順に現れる(境目はぼかす)
         var k = Math.max(0, Math.min(1, (deg - 90) / (OPEN_ANGLE - 90)));
-        var reach = ((q.ft[0] + q.fb[0]) / 2 - +p.wallshadow.dataset.x) + k * +p.wallshadow.dataset.w;
-        var grad = "linear-gradient(to right, #000 " + reach.toFixed(1) + "px, transparent " + (reach + 28).toFixed(1) + "px)";
-        wallShadow.style.webkitMaskImage = wallShadow.style.maskImage = grad;
-        wallShadow.style.opacity = Math.min(1, k * 1.4).toFixed(3);
-        wallShadow.style.visibility = k > 0 ? "visible" : "hidden";
+        if (me) {
+          me.k = k;
+          me.reach = ((q.ft[0] + q.fb[0]) / 2 - +p.wallshadow.dataset.x) + k * +p.wallshadow.dataset.w;
+          queueDraw();
+        }
         var swap = Math.max(0, Math.min(1, (deg - 84) / 8));
         var endX = L.ft[0] - b[0] + (L.fb[0] - L.ft[0]) * hangAt, endY = L.ft[1] - b[1] + (L.fb[1] - L.ft[1]) * hangAt;
         var nowX = q.ft[0] + (q.fb[0] - q.ft[0]) * hangAt, nowY = q.ft[1] + (q.fb[1] - q.ft[1]) * hangAt;
@@ -713,16 +733,20 @@
       // 箱が見えたとき・大きさが変わったときに描き直す
       if (window.ResizeObserver) new ResizeObserver(function () { render(angle); }).observe(box);
       else window.addEventListener("resize", function () { render(angle); });
-      var cd = p.clean.dataset;
-      boxes.push({ el: box, img: p.clean, x: b[0] + +cd.x, y: b[1] + +cd.y });
+      var cd = p.clean.dataset, wd = p.wallshadow.dataset;
+      me = { el: box, img: p.clean, x: b[0] + +cd.x, y: b[1] + +cd.y, inside: p.inside, bx: b[0], by: b[1],
+             ws: p.wallshadow, wx: b[0] + +wd.x, wy: b[1] + +wd.y, k: 0, reach: 0 };
+      boxes.push(me);
       layer.appendChild(box);
     });
     // 私書箱の状態(open / moving)が変わったら描き直す
-    var mo = new MutationObserver(drawClean);
+    var mo = new MutationObserver(queueDraw);
     boxes.forEach(function (bx) {
       mo.observe(bx.el, { attributes: true, attributeFilter: ["class"] });
-      if (!bx.img.complete) bx.img.addEventListener("load", drawClean);
+      [bx.img, bx.inside, bx.ws].forEach(function (im) { if (!im.complete) im.addEventListener("load", queueDraw); });
     });
+    img.addEventListener("load", drawClean);
+    drawClean();
     frame.querySelector(".works-scene").appendChild(layer);
   }
 
@@ -747,6 +771,6 @@
   });
 })();
 </script>
-<script src="works-dial.js?v=35"></script>
+<script src="works-dial.js?v=37"></script>
 </body>
 </html>
