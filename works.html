@@ -10,7 +10,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bentham&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Iosevka+Charon:wght@700&text=%23012345&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="pc-deco.css?v=46">
 <style>
   :root { --diner-bg: #DF9079; --paper: #F5E9CA; }
@@ -218,7 +217,7 @@
   .locker .locker-label { /* 名札の番号。扉と一緒に回る(閉じて止まっている間はキャンバスに描く) */
     width: 0;
     height: 0;
-    font: 700 19.43px "Iosevka Charon", monospace;
+    font: 400 19.43px Bentham, serif;
     color: #bf603c;
     line-height: 0;
     white-space: nowrap;
@@ -462,19 +461,19 @@
   // 鍵(札)の掛かった私書箱。名札の番号(no)とその中心(label)、店内の画像(1116×2000)での位置 [左, 上, 右, 下] と、
   // 開いたデザインでの扉の四隅(蝶番側の上・下、開く側の上・下)
   var LOCKERS = [
-    { no: "#01", label: [781.5, 255.6], box: [667, 205, 887, 428], ht: [866, 212], hb: [866, 414], ft: [969, 157], fb: [971, 370] },
-    { no: "#02", label: [559.4, 477.8], box: [447, 429, 666, 746], ht: [644, 440], hb: [644, 736], ft: [736, 404], fb: [736, 706] },
-    { no: "#03", label: [337.3, 791.7], box: [227, 747, 446, 961], ht: [419, 760], hb: [419, 951], ft: [500, 749], fb: [500, 951] },
-    { no: "#04", label: [781.5, 791.7], box: [667, 747, 887, 961], ht: [868, 760], hb: [868, 951], ft: [971, 745], fb: [971, 951] },
-    { no: "#05", label: [559.4, 1006.9], box: [447, 962, 666, 1176], ht: [644, 976], hb: [644, 1172], ft: [736, 972], fb: [737, 1170] }
+    { no: "#01", label: [781.5, 254.2], box: [667, 205, 887, 428], ht: [866, 212], hb: [866, 414], ft: [969, 157], fb: [971, 370] },
+    { no: "#02", label: [559.4, 476.4], box: [447, 429, 666, 746], ht: [644, 440], hb: [644, 736], ft: [736, 404], fb: [736, 706] },
+    { no: "#03", label: [337.3, 790.3], box: [227, 747, 446, 961], ht: [419, 760], hb: [419, 951], ft: [500, 749], fb: [500, 951] },
+    { no: "#04", label: [781.5, 790.3], box: [667, 747, 887, 961], ht: [868, 760], hb: [868, 951], ft: [971, 745], fb: [971, 951] },
+    { no: "#05", label: [559.4, 1005.5], box: [447, 962, 666, 1176], ht: [644, 976], hb: [644, 1172], ft: [736, 972], fb: [737, 1170] }
   ];
   var OPEN_ANGLE = 113; // 開いたデザインの扉の角度(度)
   // 開いたデザインの5枚の扉(板の大きさで回したもの)から求めた、写真を撮ったカメラ(目の位置と距離。写真の px)
   var CAMERA = { x: 300, y: 1100, d: 3000 };
   var THICK = 0.05;     // 扉の厚み(扉の幅に対する割合)
   var OPEN_MS = 420, CLOSE_MS = 360;
-  // 名札の番号の文字(Figma: Iosevka Charon Bold 7px。店内の画像の px では 7 × 1116/402)
-  var LABEL_FONT = '700 19.43px "Iosevka Charon", monospace', LABEL_COLOR = "#bf603c";
+  // 名札の番号の文字(Figma: Bentham Regular 7px。店内の画像の px では 7 × 1116/402)
+  var LABEL_FONT = '400 19.43px Bentham, serif', LABEL_COLOR = "#bf603c";
 
   function pct(v, total) { return (v / total * 100) + "%"; }
 
