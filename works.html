@@ -179,6 +179,42 @@
      画像はすべて暗号化された中身に入っている。位置は下の LOCKERS */
   .locker-layer { position: absolute; left: 0; top: 0; width: 100%; aspect-ratio: 1116 / 2000; display: none; }
   .locker-clean { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
+  .locker-layer { container-type: inline-size; } /* メニューの文字を店内の画像の幅に合わせて縮める(cqw) */
+  /* カウンターのサービスベル。押すとつまみが沈んで光り、「チーン」と鳴って、トップへ戻るメニューが出る(Figma node 380-196) */
+  .service-bell {
+    position: absolute;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .service-bell:focus-visible { outline: 2px solid #fff6dc; outline-offset: 2px; }
+  .bell-menu {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    background: rgba(223, 144, 121, 0.25);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+    cursor: default;
+  }
+  .bell-menu.show { opacity: 1; visibility: visible; transition: opacity 0.3s ease; }
+  .bell-menu-link { /* Figma: Bentham 28px 白、左 97px・上 384px(画像 402×720 の中) */
+    position: absolute;
+    left: 24.13%;
+    top: 53.33%;
+    font-family: "Bentham", serif;
+    font-size: 6.965cqw;
+    line-height: 1;
+    color: #fff;
+    text-shadow: 0 0 0.995cqw rgba(148, 43, 13, 0.5);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .bell-menu.show .bell-menu-link { animation: bell-menu-in 0.35s ease-out; }
+  @keyframes bell-menu-in { from { transform: translateY(0.8cqw); } to { transform: none; } }
   .works-frame.opened .locker-layer { display: block; }
   .works-frame.melt-wait .locker-layer,
   .works-frame.melting .locker-layer { visibility: hidden; }
@@ -543,6 +579,29 @@
     } catch (err) {}
   }
 
+  // サービスベルの「チーン」。少しずらした高い音を重ねて、金属らしい響き(うなり)と余韻を出す
+  function ding() {
+    try {
+      if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+      if (actx.state === "suspended") actx.resume();
+      var t = actx.currentTime, out = actx.createGain();
+      out.gain.value = 0.45;
+      out.connect(actx.destination);
+      [[1, 0.30, 2.2], [1.004, 0.18, 1.9], [2.76, 0.10, 0.8], [5.40, 0.05, 0.4], [8.93, 0.025, 0.18]].forEach(function (p) {
+        var o = actx.createOscillator(), g = actx.createGain();
+        o.type = "sine";
+        o.frequency.value = 2093 * p[0];
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(p[1], t + 0.004);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + p[2]);
+        o.connect(g);
+        g.connect(out);
+        o.start(t);
+        o.stop(t + p[2] + 0.05);
+      });
+    } catch (err) {}
+  }
+
   function restart(el, cls) { // 同じアニメーションをもう一度最初から再生する
     el.classList.remove(cls);
     void el.offsetWidth;
@@ -565,10 +624,72 @@
     layer.appendChild(clean);
     var cctx = clean.getContext("2d"), boxes = [];
     var tmp = document.createElement("canvas"), tctx = tmp.getContext("2d");
+    // サービスベル(店内の画像の px)。hit: 押せる範囲、knob: つまみ、glow: 光らせるところ
+    var BELL = { hit: [250, 1276, 388, 1390], knob: [305, 1287, 333, 1312], glow: [262, 1306, 376, 1382] };
+    var bell = { d: 0, glow: 0, clean: null, shine: null };
+    function bellParts() {
+      if (bell.clean) return true;
+      if (!(img.complete && img.naturalWidth)) return false;
+      var K = BELL.knob, kw = K[2] - K[0], kh = K[3] - K[1], W = kw + 2;
+      // つまみが沈んだあとに見える後ろの扉(無地)を、つまみの左右の扉の色を横につないで作る
+      var c = document.createElement("canvas");
+      c.width = W; c.height = kh;
+      var x = c.getContext("2d");
+      x.drawImage(img, K[0] - 1, K[1], W, kh, 0, 0, W, kh);
+      var data = x.getImageData(0, 0, W, kh), px = data.data;
+      for (var y = 0; y < kh; y++) {
+        var l = y * W * 4, r = (y * W + W - 1) * 4;
+        for (var i = 1; i < W - 1; i++) {
+          var t = i / (W - 1), o = (y * W + i) * 4;
+          for (var ch = 0; ch < 4; ch++) px[o + ch] = px[l + ch] * (1 - t) + px[r + ch] * t;
+        }
+      }
+      x.putImageData(data, 0, 0);
+      // 光らせるベルの形(丸い上と台座を、ぼかした楕円で切り抜く)
+      var G = BELL.glow, gw = G[2] - G[0], gh = G[3] - G[1];
+      var m = document.createElement("canvas"), mx = m.getContext("2d");
+      m.width = gw; m.height = gh;
+      [[318, 1336, 46, 30], [318, 1365, 56, 15]].forEach(function (e) {
+        mx.save();
+        mx.translate(e[0] - G[0], e[1] - G[1]);
+        mx.scale(e[2], e[3]);
+        var g = mx.createRadialGradient(0, 0, 0, 0, 0, 1);
+        g.addColorStop(0, "#000"); g.addColorStop(0.8, "#000"); g.addColorStop(1, "rgba(0,0,0,0)");
+        mx.fillStyle = g;
+        mx.fillRect(-1, -1, 2, 2);
+        mx.restore();
+      });
+      var sh = document.createElement("canvas"), sx = sh.getContext("2d");
+      sh.width = gw; sh.height = gh;
+      sx.drawImage(img, G[0], G[1], gw, gh, 0, 0, gw, gh);
+      sx.globalCompositeOperation = "destination-in";
+      sx.drawImage(m, 0, 0);
+      bell.clean = c; bell.shine = sh;
+      return true;
+    }
+    function drawBell() {
+      if (!bellParts()) return;
+      var K = BELL.knob, kw = K[2] - K[0], kh = K[3] - K[1];
+      if (bell.d > 0.05) { // つまみを沈める(ベルの丸い上より下は見せない)
+        cctx.drawImage(bell.clean, 1, 0, kw, kh, K[0], K[1], kw, kh);
+        cctx.save();
+        cctx.beginPath(); cctx.rect(K[0], K[1], kw, kh); cctx.clip();
+        cctx.drawImage(img, K[0], K[1], kw, kh, K[0], K[1] + bell.d, kw, kh);
+        cctx.restore();
+      }
+      if (bell.glow > 0.01) { // 鳴ったベルがきらっと光る
+        cctx.save();
+        cctx.globalCompositeOperation = "screen";
+        cctx.globalAlpha = bell.glow * 0.55;
+        cctx.drawImage(bell.shine, BELL.glow[0], BELL.glow[1]);
+        cctx.restore();
+      }
+    }
     // 動かないもの(店内・札の下を消す部分・箱の中・扉の右の壁の影)は、すべてこのキャンバスに描く
     function drawClean() {
       cctx.clearRect(0, 0, 1116, 2000);
       if (img.complete && img.naturalWidth) cctx.drawImage(img, 0, 0, 1116, 2000);
+      if (bell.d > 0.05 || bell.glow > 0.01) drawBell();
       // 閉じて止まっている私書箱の名札の番号(動いている扉の番号は扉と一緒に回る .locker-label)
       cctx.font = LABEL_FONT;
       cctx.fillStyle = LABEL_COLOR;
@@ -775,6 +896,57 @@
     img.addEventListener("load", drawClean);
     if (document.fonts && document.fonts.load) document.fonts.load(LABEL_FONT, "#012345").then(queueDraw, function () {}); // 番号の字が届いたら描き直す
     drawClean();
+
+    // サービスベルとメニュー
+    var bellBtn = document.createElement("button");
+    bellBtn.type = "button";
+    bellBtn.className = "service-bell";
+    bellBtn.setAttribute("aria-label", "サービスベル(トップへ戻るメニューを出す)");
+    bellBtn.setAttribute("aria-haspopup", "true");
+    bellBtn.style.left = pct(BELL.hit[0], 1116);
+    bellBtn.style.top = pct(BELL.hit[1], 2000);
+    bellBtn.style.width = pct(BELL.hit[2] - BELL.hit[0], 1116);
+    bellBtn.style.height = pct(BELL.hit[3] - BELL.hit[1], 2000);
+    var menu = document.createElement("div");
+    menu.className = "bell-menu";
+    menu.innerHTML = '<a class="bell-menu-link" href="home.html">Back to<br>the restaurant</a>';
+    function showMenu(on, byKey) {
+      menu.classList.toggle("show", on);
+      bellBtn.setAttribute("aria-expanded", on ? "true" : "false");
+      if (on && byKey) menu.querySelector("a").focus({ preventScroll: true }); // キーボードで押したときだけ文字へ移る
+    }
+    menu.addEventListener("click", function (e) { // 文字以外をタップするとメニューを閉じる
+      if (!e.target.closest("a")) showMenu(false);
+    });
+    frame.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && menu.classList.contains("show")) { showMenu(false); bellBtn.focus(); }
+    });
+    var ringing = false;
+    bellBtn.addEventListener("click", function (e) {
+      if (ringing) return;
+      var byKey = e.detail === 0;
+      ringing = true;
+      knock(3200, 0.18, 0.012); // つまみを押すカチッ
+      var DOWN = 70, HOLD = 50, UP = 160, GLOW = 750, start = null, rang = false;
+      function step(now) {
+        if (start === null) start = now;
+        var t = now - start;
+        // つまみ: すばやく沈んで、少し止まり、ばねで戻る
+        if (reduceMotion) bell.d = 0;
+        else if (t < DOWN) bell.d = 5 * Math.sin(t / DOWN * Math.PI / 2);
+        else if (t < DOWN + HOLD) bell.d = 5;
+        else bell.d = Math.max(0, 5 * (1 - (t - DOWN - HOLD) / UP));
+        if (t >= DOWN && !rang) { rang = true; ding(); }
+        bell.glow = t < DOWN ? 0 : Math.exp(-(t - DOWN) / (GLOW / 3));
+        drawClean();
+        if (t < DOWN + GLOW) requestAnimationFrame(step);
+        else { bell.d = 0; bell.glow = 0; drawClean(); ringing = false; }
+      }
+      requestAnimationFrame(step);
+      setTimeout(function () { showMenu(true, byKey); }, 380);
+    });
+    layer.appendChild(bellBtn);
+    layer.appendChild(menu);
     frame.querySelector(".works-scene").appendChild(layer);
   }
 
