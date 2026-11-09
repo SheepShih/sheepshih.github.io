@@ -114,7 +114,7 @@ body {
   top: 0;
   left: 0;
   width: 402px;
-  height: 4017px; /* ボタンが大きくなった分(16px)だけ下に伸ばす */
+  height: 4009px; /* ボタンが大きくなった分(8px)だけ下に伸ばす */
   background: var(--paper);
   transform-origin: top left;
 }
@@ -135,7 +135,7 @@ body {
   font-weight: 700;
   font-size: 24px;
   line-height: 1;
-  padding: 12px 24px; /* Figma: 287×48 */
+  padding: 8px 16px; /* Figma: 271×40 */
   text-decoration: none;
   white-space: nowrap;
 }
