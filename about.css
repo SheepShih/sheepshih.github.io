@@ -130,7 +130,9 @@ body {
   z-index: 1; /* 人イラストの脚を上に重ねるため、ボタンは下の層に */
   background: var(--ink);
   color: var(--paper);
-  font-family: "Bentham", serif;
+  /* Figma: Palatino Bold。Mac・iPhone は内蔵の Palatino、Windows は Palatino Linotype / Book Antiqua */
+  font-family: Palatino, "Palatino Linotype", "Book Antiqua", "URW Palladio L", P052, serif;
+  font-weight: 700;
   font-size: 24px;
   line-height: 1;
   padding: 4px 8px;
