@@ -319,6 +319,9 @@
   .case-overlay::-webkit-scrollbar { display: none; }
   .case-overlay:focus { outline: none; } /* 開いたときにキーボード操作のためフォーカスを移すが、枠線は出さない */
   .case-overlay.show { visibility: visible; }
+  /* ケースが開ききったら、後ろの店内(枠)を隠す。枠とケースの端が少しでもずれると、
+     店内の明るい天井が細い線に見えるため。後ろは背景と同じオレンジになる */
+  .works-frame.case-covered { visibility: hidden; }
   /* 開くとき: 開いた私書箱の大きさから、手紙を取り出すように枠いっぱいへ広がる(JS が clip-path を動かす)。
      中身は少し下から浮き上がって出てくる */
   .case-overlay.opening .case { animation: case-rise 0.75s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
@@ -335,7 +338,8 @@
     flex-direction: column;
     gap: 120px;
     padding-bottom: 120px;
-    background: #f2eee3;
+    /* 一番上の帯の部分はオレンジ。拡大表示で地のクリーム色が帯の上に 1px はみ出して線に見えないように */
+    background: linear-gradient(#df9079 32px, #f2eee3 32px);
     font-family: var(--case-gothic);
     font-size: 13px;
     line-height: 23px; /* Figma の 1.8 は px に丸められて 23px */
@@ -804,7 +808,10 @@
       caseOverlay.classList.add("show");
       clipTo(boxInset(fromEl), "inset(0px 0px 0px 0px)", CASE_MS, function () {
         if (clipAnim) { clipAnim.cancel(); clipAnim = null; }
+        frame.classList.add("case-covered");
       });
+    } else {
+      frame.classList.add("case-covered");
     }
     caseOverlay.classList.add("show");
     caseFrom = document.activeElement;
@@ -813,6 +820,7 @@
     return true;
   }
   function hideCase() {
+    frame.classList.remove("case-covered"); // 縮んで戻る間は店内が見えるように
     function done() {
       caseOverlay.classList.remove("show", "opening");
       if (clipAnim) { clipAnim.cancel(); clipAnim = null; }
