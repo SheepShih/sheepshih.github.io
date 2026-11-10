@@ -310,7 +310,8 @@
     overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
-    background: #f2eee3;
+    /* 上の帯(タブ)の後ろはオレンジにする。拡大・縮小で端が 1px ずれても、上に薄い線が出ないように */
+    background: linear-gradient(#df9079 40px, #f2eee3 40px);
     color: #000;
     visibility: hidden;
     scrollbar-width: none;
@@ -732,8 +733,18 @@
 
   // ---------- ケーススタディ ----------
   var caseOverlay = null, caseFrom = null;
-  function fitCase() { // デザインの幅 402px を枠の幅に合わせる
+  function fitCase() { // 店内の枠とまったく同じ位置・大きさに重ね、デザインの幅 402px を枠の幅に合わせる
     if (!caseOverlay) return;
+    // CSS の中央寄せ(translate)だと、画面の高さが奇数のとき店内の枠と 0.5px ずれて、
+    // 後ろの店内の天井が上の端に細い線になって見える。枠の実際の位置をそのまま使う
+    var fr = frame.getBoundingClientRect();
+    if (fr.width) {
+      caseOverlay.style.transform = "none";
+      caseOverlay.style.left = fr.left + "px";
+      caseOverlay.style.top = fr.top + "px";
+      caseOverlay.style.width = fr.width + "px";
+      caseOverlay.style.height = fr.height + "px";
+    }
     var z = caseOverlay.clientWidth / 402;
     caseOverlay.querySelectorAll(".case").forEach(function (c) { c.style.zoom = z; });
   }
