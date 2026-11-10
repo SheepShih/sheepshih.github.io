@@ -300,9 +300,10 @@
     top: 50%;
     left: 50%;
     width: min(100vw, 430px);
-    aspect-ratio: 768 / 1376;
-    max-height: 100vh;
-    max-height: 100dvh;
+    /* 高さは店内の枠と同じ(幅 × 1376/768、画面の高さまで)。aspect-ratio だと Safari では
+       中身の長さに引っぱられて画面いっぱいに伸びるので、計算して指定する */
+    height: min(100vh, min(100vw, 430px) * 1376 / 768);
+    height: min(100dvh, min(100vw, 430px) * 1376 / 768);
     transform: translate(-50%, -50%);
     z-index: 20;
     overflow-x: hidden;
