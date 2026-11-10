@@ -312,14 +312,19 @@
     -webkit-overflow-scrolling: touch;
     background: #f2eee3;
     color: #000;
-    opacity: 0;
     visibility: hidden;
-    transition: opacity 0.35s ease, visibility 0s linear 0.35s;
     scrollbar-width: none;
   }
   .case-overlay::-webkit-scrollbar { display: none; }
   .case-overlay:focus { outline: none; } /* 開いたときにキーボード操作のためフォーカスを移すが、枠線は出さない */
-  .case-overlay.show { opacity: 1; visibility: visible; transition: opacity 0.35s ease; }
+  .case-overlay.show { visibility: visible; }
+  /* 開くとき: 開いた私書箱の大きさから、手紙を取り出すように枠いっぱいへ広がる(JS が clip-path を動かす)。
+     中身は少し下から浮き上がって出てくる */
+  .case-overlay.opening .case { animation: case-rise 0.75s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  @keyframes case-rise {
+    0%, 45% { opacity: 0; transform: translateY(24px); } /* 広がりきる少し前から出す */
+    100% { opacity: 1; transform: none; }
+  }
   .case {
     --case-serif: Palatino, "Palatino Linotype", "Book Antiqua", "URW Palladio L", P052, serif;
     --case-mincho: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", serif;
@@ -407,7 +412,7 @@
     cursor: pointer;
   }
   .case-back-btn:focus-visible, .case-meta a:focus-visible { outline: 2px solid #000; outline-offset: 4px; }
-  @media (prefers-reduced-motion: reduce) { .case-overlay, .case-overlay.show { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .case-overlay.opening .case { animation: none; } }
   .dial-status {
     position: absolute;
     width: 1px;
@@ -755,13 +760,41 @@
       if (caseOverlay.classList.contains("show")) hideCase();
     });
   }
-  function openCase(id) {
+  // 開いた私書箱(from)の位置を、枠の中の clip-path(inset)にする
+  var CASE_MS = 650, caseFromBox = null, caseTimer = null;
+  function boxInset(el) {
+    var r = caseOverlay.getBoundingClientRect(), b = el.getBoundingClientRect();
+    return "inset(" + [b.top - r.top, r.right - b.right, r.bottom - b.bottom, b.left - r.left]
+      .map(function (v) { return Math.max(0, v).toFixed(1) + "px"; }).join(" ") + ")";
+  }
+  var clipAnim = null;
+  function clipTo(from, to, ms, done) { // 箱の形 ⇄ 枠いっぱい(Web Animations。Safari でも確実に動く)
+    if (clipAnim) clipAnim.cancel();
+    clearTimeout(caseTimer);
+    if (!caseOverlay.animate) { done(); return; }
+    clipAnim = caseOverlay.animate(
+      [{ clipPath: from, webkitClipPath: from }, { clipPath: to, webkitClipPath: to }],
+      { duration: ms, easing: "cubic-bezier(0.65, 0, 0.35, 1)", fill: "forwards" });
+    clipAnim.onfinish = function () { done(); };
+  }
+  function openCase(id, fromEl) {
     if (!caseOverlay) return false;
     var target = caseOverlay.querySelector('.case[data-case="' + id + '"]');
     if (!target) return false;
     caseOverlay.querySelectorAll(".case").forEach(function (c) { c.classList.toggle("show", c === target); });
     fitCase();
     caseOverlay.scrollTop = 0;
+    caseFromBox = fromEl || null;
+    if (fromEl && !reduceMotion) {
+      // 箱の大きさで現れて、枠いっぱいに広がる
+      caseOverlay.classList.remove("opening");
+      void caseOverlay.offsetWidth;
+      caseOverlay.classList.add("opening");
+      caseOverlay.classList.add("show");
+      clipTo(boxInset(fromEl), "inset(0px 0px 0px 0px)", CASE_MS, function () {
+        if (clipAnim) { clipAnim.cancel(); clipAnim = null; }
+      });
+    }
     caseOverlay.classList.add("show");
     caseFrom = document.activeElement;
     caseOverlay.focus({ preventScroll: true });
@@ -769,7 +802,16 @@
     return true;
   }
   function hideCase() {
-    caseOverlay.classList.remove("show");
+    function done() {
+      caseOverlay.classList.remove("show", "opening");
+      if (clipAnim) { clipAnim.cancel(); clipAnim = null; }
+    }
+    if (caseFromBox && !reduceMotion) {
+      // 閉じるときは、元の私書箱の中へ縮んで戻る
+      clipTo("inset(0px 0px 0px 0px)", boxInset(caseFromBox), 450, done);
+    } else {
+      done();
+    }
     if (caseFrom && caseFrom.focus) caseFrom.focus({ preventScroll: true });
   }
   function closeCase() {
@@ -1019,7 +1061,7 @@
       box.addEventListener("click", function (e) {
         if (busy) return;
         // 開いた箱の中(手紙)をタップするとケーススタディへ。開いた扉をタップしたときは閉じる
-        if (L.caseId && box.classList.contains("open") && !e.target.closest(".locker-back") && openCase(L.caseId)) return;
+        if (L.caseId && box.classList.contains("open") && !e.target.closest(".locker-back") && openCase(L.caseId, box)) return;
         var opening = !box.classList.contains("open");
         box.setAttribute("aria-expanded", opening ? "true" : "false");
         box.classList.toggle("open", opening);
@@ -1144,6 +1186,6 @@
   });
 })();
 </script>
-<script src="works-dial.js?v=41"></script>
+<script src="works-dial.js?v=42"></script>
 </body>
 </html>
