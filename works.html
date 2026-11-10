@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png?v=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bentham&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bentham&family=Noto+Sans+JP:wght@500;800&family=Shippori+Mincho+B1:wght@800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="pc-deco.css?v=46">
 <style>
   :root { --diner-bg: #DF9079; --paper: #F5E9CA; }
@@ -292,6 +292,120 @@
     .locker-key { transition: none !important; }
     .locker .locker-tag, .locker .locker-tag > span { animation: none !important; }
   }
+  /* ---------- ケーススタディ(Figma node 394-344) ----------
+     開いた私書箱の中をタップすると、店内の枠に重なって開く。中身(文章)は暗号化された中身に入っている。
+     デザインの幅 402px のまま組み、JS が枠の幅に合わせて zoom で拡大・縮小する */
+  .case-overlay { /* About と同じく、店内の枠(.works-frame)と同じ大きさ・位置の枠の中でスクロールする */
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: min(100vw, 430px);
+    aspect-ratio: 768 / 1376;
+    max-height: 100vh;
+    max-height: 100dvh;
+    transform: translate(-50%, -50%);
+    z-index: 20;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    background: #f2eee3;
+    color: #000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.35s ease, visibility 0s linear 0.35s;
+    scrollbar-width: none;
+  }
+  .case-overlay::-webkit-scrollbar { display: none; }
+  .case-overlay.show { opacity: 1; visibility: visible; transition: opacity 0.35s ease; }
+  .case {
+    --case-serif: Palatino, "Palatino Linotype", "Book Antiqua", "URW Palladio L", P052, serif;
+    --case-mincho: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", serif;
+    --case-gothic: "TBNPGothic Std", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", "Yu Gothic", sans-serif;
+    display: none;
+    width: 402px;
+    flex-direction: column;
+    gap: 120px;
+    padding-bottom: 120px;
+    background: #f2eee3;
+    font-family: var(--case-gothic);
+    font-size: 13px;
+    line-height: 23px; /* Figma の 1.8 は px に丸められて 23px */
+    word-break: break-word;
+    cursor: auto;
+  }
+  .case.show { display: flex; }
+  .case h1, .case h2, .case h3, .case p, .case ul, .case dl, .case dd, .case dt { margin: 0; padding: 0; font-weight: inherit; font-size: inherit; }
+  .case-tabs { position: relative; height: 24px; background: #c5c5c7; }
+  .case-tab {
+    position: absolute;
+    top: 0;
+    width: 86px;
+    height: 24px;
+    padding-top: 3px;
+    background: center / 100% 100% no-repeat;
+    font: 400 16px/1 "Bentham", serif;
+    text-align: center;
+  }
+  .case-tab[data-tab="01"] { left: 0; background-image: url(assets/img/case-tab-01.svg); }
+  .case-tab[data-tab="02"] { left: 79px; background-image: url(assets/img/case-tab-02.svg); }
+  .case-tab[data-tab="03"] { left: 158px; background-image: url(assets/img/case-tab-03.svg); }
+  .case-tab[data-tab="04"] { left: 237px; background-image: url(assets/img/case-tab-04.svg); }
+  .case-tab[data-tab="05"] { left: 316px; background-image: url(assets/img/case-tab-05.svg); }
+  .case-content { display: flex; flex-direction: column; gap: 120px; padding: 0 32px; }
+  .case-top { display: flex; flex-direction: column; align-items: center; gap: 32px; }
+  .case-title { display: flex; flex-direction: column; align-items: center; gap: 72px; font-family: var(--case-serif); font-weight: 700; line-height: 1; }
+  .case-no { font-size: 13px; }
+  .case .case-title h1 { font-size: 64px; font-weight: 700; text-align: center; }
+  .case-sub, .case-back { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .case-line { width: 0; height: 64px; border-left: 1px solid #000; }
+  .case-sub p { font: 800 13px/1 var(--case-mincho); text-align: center; }
+  .case-meta { display: flex; flex-direction: column; gap: 24px; }
+  .case-meta > div { display: flex; flex-direction: column; gap: 12px; padding-top: 28px; border-top: 1px solid #000; }
+  .case-meta > div:first-child { gap: 16px; }
+  .case-meta dt { font: 700 11px/1 var(--case-serif); }
+  .case-meta dd { font: 800 16px/1.7 var(--case-mincho); }
+  .case-meta dd small { font-size: 11px; }
+  .case-meta dd small.case-meta-line { display: block; line-height: 17px; }
+  .case-meta dd.case-meta-en { font: 700 24px/1 var(--case-serif); }
+  .case-meta a { color: inherit; text-decoration: underline; text-underline-position: from-font; }
+  .case-list { display: flex; flex-direction: column; gap: 72px; }
+  .case-table-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 16px;
+    border: 1px solid #000;
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .case .case-table-title h2 { font: 700 24px/1 var(--case-serif); }
+  .case-table-title p { font: 800 13px/1 var(--case-mincho); }
+  .case-text { padding: 40px 16px; border: 1px solid #000; border-top: 0; font-weight: 500; }
+  .case-text strong { font-family: "TBNPMDGothic Std", var(--case-gothic); font-weight: 800; }
+  .case-text ul { list-style: disc; padding-left: 19.5px; }
+  .case-text .case-gap { margin-top: 23px; }
+  .case-step { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .case .case-step h3 {
+    padding-bottom: 8px;
+    border-bottom: 1px solid #000;
+    font: 800 16px/28.5px var(--case-mincho);
+    text-align: center;
+    white-space: nowrap;
+  }
+  .case-step h3 span { display: block; font-family: var(--case-serif); font-weight: 700; }
+  .case-step > p { align-self: stretch; }
+  .case-back-btn {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #000;
+    font: 700 28px/1 var(--case-serif);
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .case-back-btn:focus-visible, .case-meta a:focus-visible { outline: 2px solid #000; outline-offset: 4px; }
+  @media (prefers-reduced-motion: reduce) { .case-overlay, .case-overlay.show { transition: none; } }
   .dial-status {
     position: absolute;
     width: 1px;
@@ -494,10 +608,11 @@
     (img.decode ? img.decode() : Promise.resolve()).then(show, show);
   });
 
-  // 鍵(札)の掛かった私書箱。名札の番号(no)とその中心(label)、店内の画像(1116×2000)での位置 [左, 上, 右, 下] と、
+  // 鍵(札)の掛かった私書箱。caseId があるものは、開いた箱の中をタップするとそのケーススタディが開く。
+  // 名札の番号(no)とその中心(label)、店内の画像(1116×2000)での位置 [左, 上, 右, 下] と、
   // 開いたデザインでの扉の四隅(蝶番側の上・下、開く側の上・下)
   var LOCKERS = [
-    { no: "#01", label: [781.5, 254.2], box: [667, 205, 887, 428], ht: [866, 212], hb: [866, 414], ft: [969, 157], fb: [971, 370] },
+    { no: "#01", caseId: "01", label: [781.5, 254.2], box: [667, 205, 887, 428], ht: [866, 212], hb: [866, 414], ft: [969, 157], fb: [971, 370] },
     { no: "#02", label: [559.4, 476.4], box: [447, 429, 666, 746], ht: [644, 440], hb: [644, 736], ft: [736, 404], fb: [736, 706] },
     { no: "#03", label: [337.3, 790.3], box: [227, 747, 446, 961], ht: [419, 760], hb: [419, 951], ft: [500, 749], fb: [500, 951] },
     { no: "#04", label: [781.5, 790.3], box: [667, 747, 887, 961], ht: [868, 760], hb: [868, 951], ft: [971, 745], fb: [971, 951] },
@@ -608,7 +723,60 @@
     el.classList.add(cls);
   }
 
+  // ---------- ケーススタディ ----------
+  var caseOverlay = null, caseFrom = null;
+  function fitCase() { // デザインの幅 402px を枠の幅に合わせる
+    if (!caseOverlay) return;
+    var z = caseOverlay.clientWidth / 402;
+    caseOverlay.querySelectorAll(".case").forEach(function (c) { c.style.zoom = z; });
+  }
+  function buildCases() {
+    var cases = document.querySelectorAll("#worksSecret .case");
+    if (!cases.length) return;
+    caseOverlay = document.createElement("div");
+    caseOverlay.className = "case-overlay";
+    caseOverlay.setAttribute("role", "dialog");
+    caseOverlay.setAttribute("aria-modal", "true");
+    caseOverlay.setAttribute("aria-label", "ケーススタディ");
+    caseOverlay.tabIndex = -1;
+    cases.forEach(function (c) { caseOverlay.appendChild(c); });
+    caseOverlay.addEventListener("click", function (e) {
+      if (e.target.closest(".case-back-btn")) closeCase();
+    });
+    document.body.appendChild(caseOverlay);
+    window.addEventListener("resize", fitCase);
+    window.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && caseOverlay.classList.contains("show")) closeCase();
+    });
+    // ブラウザの「戻る」でも私書箱の部屋へ戻る
+    window.addEventListener("popstate", function () {
+      if (caseOverlay.classList.contains("show")) hideCase();
+    });
+  }
+  function openCase(id) {
+    if (!caseOverlay) return false;
+    var target = caseOverlay.querySelector('.case[data-case="' + id + '"]');
+    if (!target) return false;
+    caseOverlay.querySelectorAll(".case").forEach(function (c) { c.classList.toggle("show", c === target); });
+    fitCase();
+    caseOverlay.scrollTop = 0;
+    caseOverlay.classList.add("show");
+    caseFrom = document.activeElement;
+    caseOverlay.focus({ preventScroll: true });
+    try { history.pushState({ caseId: id }, ""); } catch (err) {}
+    return true;
+  }
+  function hideCase() {
+    caseOverlay.classList.remove("show");
+    if (caseFrom && caseFrom.focus) caseFrom.focus({ preventScroll: true });
+  }
+  function closeCase() {
+    if (history.state && history.state.caseId) history.back(); // popstate で閉じる
+    else hideCase();
+  }
+
   function buildLockers() {
+    buildCases();
     var parts = {};
     document.querySelectorAll("#worksSecret .locker-part").forEach(function (im) {
       (parts[im.dataset.i] = parts[im.dataset.i] || {})[im.dataset.part] = im;
@@ -731,7 +899,7 @@
       var box = document.createElement("button");
       box.type = "button";
       box.className = "locker";
-      box.setAttribute("aria-label", "私書箱");
+      box.setAttribute("aria-label", "私書箱 " + L.no + (L.caseId ? "(開いて中をタップするとケーススタディ)" : ""));
       box.setAttribute("aria-expanded", "false");
       box.style.left = pct(b[0], 1116);
       box.style.top = pct(b[1], 2000);
@@ -846,8 +1014,10 @@
       }
       function easeIn(t) { return t * t; }
       var busy = false;
-      box.addEventListener("click", function () {
+      box.addEventListener("click", function (e) {
         if (busy) return;
+        // 開いた箱の中(手紙)をタップするとケーススタディへ。開いた扉をタップしたときは閉じる
+        if (L.caseId && box.classList.contains("open") && !e.target.closest(".locker-back") && openCase(L.caseId)) return;
         var opening = !box.classList.contains("open");
         box.setAttribute("aria-expanded", opening ? "true" : "false");
         box.classList.toggle("open", opening);
@@ -972,6 +1142,6 @@
   });
 })();
 </script>
-<script src="works-dial.js?v=40"></script>
+<script src="works-dial.js?v=41"></script>
 </body>
 </html>
