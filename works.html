@@ -348,7 +348,25 @@
   }
   .case.show { display: flex; }
   .case h1, .case h2, .case h3, .case p, .case ul, .case dl, .case dd, .case dt { margin: 0; padding: 0; font-weight: inherit; font-size: inherit; }
-  .case-tabs { position: relative; height: 32px; background: #df9079; } /* タブは帯の下にそろえる(上に 8px の余白) */
+  .case-tabs { /* タブは帯の下にそろえる(上に 8px の余白)。スクロールしても上に固定 */
+    position: -webkit-sticky;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    height: 32px;
+    background: #df9079;
+  }
+  /* 帯の上にもオレンジを少しはみ出させる。Safari ではスクロール中、固定した帯が 1px 下にずれて、
+     その上の 1 列に後ろの本文(クリーム色)が細い線になって見えるため */
+  .case-tabs::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 100%;
+    height: 6px;
+    background: #df9079;
+  }
   .case-tab { /* 下へ 1px はみ出させて、拡大・縮小したときにタブと本文の間に帯の色が線になって見えないようにする */
     position: absolute;
     bottom: -1px;
