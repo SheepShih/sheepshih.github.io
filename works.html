@@ -311,7 +311,7 @@
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
     /* 上の帯(タブ)の後ろはオレンジにする。拡大・縮小で端が 1px ずれても、上に薄い線が出ないように */
-    background: linear-gradient(#df9079 40px, #f2eee3 40px);
+    background: linear-gradient(#df9079 40px, var(--overlay-bg, #f2eee3) 40px);
     color: #000;
     visibility: hidden;
     scrollbar-width: none;
@@ -325,6 +325,8 @@
   /* 開くとき: 開いた私書箱の大きさから、手紙を取り出すように枠いっぱいへ広がる(JS が clip-path を動かす)。
      中身は少し下から浮き上がって出てくる */
   .case-overlay.opening .case { animation: case-rise 0.75s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .case.rise .case-content, .case.rise .case-back { animation: case-switch 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both; } /* タブで切り替えたとき */
+  @keyframes case-switch { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
   @keyframes case-rise {
     0%, 45% { opacity: 0; transform: translateY(24px); } /* 広がりきる少し前から出す */
     100% { opacity: 1; transform: none; }
@@ -339,7 +341,7 @@
     gap: 120px;
     padding-bottom: 120px;
     /* 一番上の帯の部分はオレンジ。拡大表示で地のクリーム色が帯の上に 1px はみ出して線に見えないように */
-    background: linear-gradient(#df9079 32px, #f2eee3 32px);
+    background: linear-gradient(#df9079 32px, var(--case-bg) 32px);
     font-family: var(--case-gothic);
     font-size: 13px;
     line-height: 23px; /* Figma の 1.8 は px に丸められて 23px */
@@ -347,6 +349,12 @@
     cursor: auto;
   }
   .case.show { display: flex; }
+  /* ケースごとの地の色(タブの色と同じ) */
+  .case { --case-bg: #f2eee3; }
+  .case[data-case="02"] { --case-bg: #d6e7f7; }
+  .case[data-case="03"] { --case-bg: #ecd1cd; }
+  .case[data-case="04"] { --case-bg: #d9e9de; }
+  .case[data-case="05"] { --case-bg: #eae1a7; }
   .case h1, .case h2, .case h3, .case p, .case ul, .case dl, .case dd, .case dt { margin: 0; padding: 0; font-weight: inherit; font-size: inherit; }
   .case-tabs { /* タブは帯の下にそろえる(上に 8px の余白)。スクロールしても上に固定 */
     position: -webkit-sticky;
@@ -373,15 +381,25 @@
     width: 86px;
     height: 25px;
     padding-top: 3px;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
     background: center / 100% 100% no-repeat;
+    color: #000;
     font: 400 16px/1 "Bentham", serif;
     text-align: center;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
   }
-  .case-tab[data-tab="01"] { left: 0; background-image: url(assets/img/case-tab-01.svg); }
-  .case-tab[data-tab="02"] { left: 79px; background-image: url(assets/img/case-tab-02.svg); }
-  .case-tab[data-tab="03"] { left: 158px; background-image: url(assets/img/case-tab-03.svg); }
-  .case-tab[data-tab="04"] { left: 237px; background-image: url(assets/img/case-tab-04.svg); }
-  .case-tab[data-tab="05"] { left: 316px; background-image: url(assets/img/case-tab-05.svg); }
+  .case-tab[disabled] { cursor: default; }
+  .case-tab.is-current { cursor: default; z-index: 10; } /* 開いているケースのタブが一番手前(ほかは近い順に重なる。JS) */
+  .case-tab:focus-visible { outline: 2px solid #000; outline-offset: -4px; }
+  .case-tab[data-tab="01"] { left: 0; background-image: url(assets/img/case-tab-01.svg?v=2); }
+  .case-tab[data-tab="02"] { left: 79px; background-image: url(assets/img/case-tab-02.svg?v=2); }
+  .case-tab[data-tab="03"] { left: 158px; background-image: url(assets/img/case-tab-03.svg?v=2); }
+  .case-tab[data-tab="04"] { left: 237px; background-image: url(assets/img/case-tab-04.svg?v=2); }
+  .case-tab[data-tab="05"] { left: 316px; background-image: url(assets/img/case-tab-05.svg?v=2); }
   .case-content { display: flex; flex-direction: column; gap: 120px; padding: 0 32px; }
   .case-top { display: flex; flex-direction: column; align-items: center; gap: 32px; }
   .case-title { display: flex; flex-direction: column; align-items: center; gap: 72px; font-family: var(--case-serif); font-weight: 700; line-height: 1; }
@@ -390,6 +408,7 @@
   .case-sub, .case-back { display: flex; flex-direction: column; align-items: center; gap: 16px; }
   .case-line { width: 0; height: 64px; border-left: 1px solid #000; }
   .case-sub p { font: 800 13px/1 var(--case-mincho); text-align: center; }
+  .case-sub p.case-sub-multi { line-height: 23.4px; } /* 2 行のときは 1.8 */
   .case-meta { display: flex; flex-direction: column; gap: 24px; }
   .case-meta > div { display: flex; flex-direction: column; gap: 12px; padding-top: 28px; border-top: 1px solid #000; }
   .case-meta > div:first-child { gap: 16px; }
@@ -415,6 +434,7 @@
   .case-text strong { font-family: "TBNPMDGothic Std", var(--case-gothic); font-weight: 800; }
   .case-text ul { list-style: disc; padding-left: 19.5px; }
   .case-text .case-gap { margin-top: 23px; }
+  .case-text .case-gap2 { margin-top: 46px; } /* 空行2つぶん */
   .case-step { display: flex; flex-direction: column; align-items: center; gap: 16px; }
   .case .case-step h3 {
     padding-bottom: 8px;
@@ -435,7 +455,7 @@
     cursor: pointer;
   }
   .case-back-btn:focus-visible, .case-meta a:focus-visible { outline: 2px solid #000; outline-offset: 4px; }
-  @media (prefers-reduced-motion: reduce) { .case-overlay.opening .case { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { .case-overlay.opening .case, .case.rise .case-content, .case.rise .case-back { animation: none; } }
   .dial-status {
     position: absolute;
     width: 1px;
@@ -643,9 +663,9 @@
   // 開いたデザインでの扉の四隅(蝶番側の上・下、開く側の上・下)
   var LOCKERS = [
     { no: "#01", caseId: "01", label: [781.5, 254.2], box: [667, 205, 887, 428], ht: [866, 212], hb: [866, 414], ft: [969, 157], fb: [971, 370] },
-    { no: "#02", label: [559.4, 476.4], box: [447, 429, 666, 746], ht: [644, 440], hb: [644, 736], ft: [736, 404], fb: [736, 706] },
-    { no: "#03", label: [337.3, 790.3], box: [227, 747, 446, 961], ht: [419, 760], hb: [419, 951], ft: [500, 749], fb: [500, 951] },
-    { no: "#04", label: [781.5, 790.3], box: [667, 747, 887, 961], ht: [868, 760], hb: [868, 951], ft: [971, 745], fb: [971, 951] },
+    { no: "#02", caseId: "02", label: [559.4, 476.4], box: [447, 429, 666, 746], ht: [644, 440], hb: [644, 736], ft: [736, 404], fb: [736, 706] },
+    { no: "#03", caseId: "03", label: [337.3, 790.3], box: [227, 747, 446, 961], ht: [419, 760], hb: [419, 951], ft: [500, 749], fb: [500, 951] },
+    { no: "#04", caseId: "04", label: [781.5, 790.3], box: [667, 747, 887, 961], ht: [868, 760], hb: [868, 951], ft: [971, 745], fb: [971, 951] },
     { no: "#05", label: [559.4, 1005.5], box: [447, 962, 666, 1176], ht: [644, 976], hb: [644, 1172], ft: [736, 972], fb: [737, 1170] }
   ];
   var OPEN_ANGLE = 113; // 開いたデザインの扉の角度(度)
@@ -781,7 +801,16 @@
     caseOverlay.tabIndex = -1;
     cases.forEach(function (c) { caseOverlay.appendChild(c); });
     caseOverlay.addEventListener("click", function (e) {
-      if (e.target.closest(".case-back-btn")) closeCase();
+      if (e.target.closest(".case-back-btn")) { closeCase(); return; }
+      var tab = e.target.closest(".case-tab");
+      if (tab && !tab.disabled && !tab.classList.contains("is-current")) switchCase(tab.dataset.tab);
+    });
+    // タブの重なり: 開いているケースが一番手前、ほかはそこから近い順
+    caseOverlay.querySelectorAll(".case").forEach(function (c) {
+      var cur = +c.dataset.case;
+      c.querySelectorAll(".case-tab").forEach(function (t) {
+        if (!t.classList.contains("is-current")) t.style.zIndex = 9 - Math.abs(+t.dataset.tab - cur);
+      });
     });
     document.body.appendChild(caseOverlay);
     window.addEventListener("resize", fitCase);
@@ -814,7 +843,8 @@
     if (!caseOverlay) return false;
     var target = caseOverlay.querySelector('.case[data-case="' + id + '"]');
     if (!target) return false;
-    caseOverlay.querySelectorAll(".case").forEach(function (c) { c.classList.toggle("show", c === target); });
+    caseOverlay.querySelectorAll(".case").forEach(function (c) { c.classList.toggle("show", c === target); c.classList.remove("rise"); });
+    showCaseBg(target);
     fitCase();
     caseOverlay.scrollTop = 0;
     caseFromBox = fromEl || null;
@@ -836,6 +866,28 @@
     caseOverlay.focus({ preventScroll: true });
     try { history.pushState({ caseId: id }, ""); } catch (err) {}
     return true;
+  }
+  // タブで別のケースへ(その場で切り替えて、上から読めるようにする)
+  function switchCase(id) {
+    var target = caseOverlay.querySelector('.case[data-case="' + id + '"]');
+    if (!target) return;
+    caseOverlay.querySelectorAll(".case").forEach(function (c) { c.classList.toggle("show", c === target); c.classList.remove("rise"); });
+    showCaseBg(target);
+    fitCase();
+    caseOverlay.scrollTop = 0;
+    if (!reduceMotion) { void target.offsetWidth; target.classList.add("rise"); }
+    caseFromBox = lockerFor(id);
+    var cur = target.querySelector(".case-tab.is-current");
+    if (cur) cur.focus({ preventScroll: true });
+    try { history.replaceState({ caseId: id }, ""); } catch (err) {}
+  }
+  function showCaseBg(c) { // スクロールの端で見える枠の地も、そのケースの色に
+    caseOverlay.style.setProperty("--overlay-bg", getComputedStyle(c).getPropertyValue("--case-bg"));
+  }
+  function lockerFor(id) {
+    var el = null;
+    document.querySelectorAll(".locker").forEach(function (b) { if (b.dataset.caseId === id) el = b; });
+    return el;
   }
   function hideCase() {
     frame.classList.remove("case-covered"); // 縮んで戻る間は店内が見えるように
@@ -980,6 +1032,7 @@
       var box = document.createElement("button");
       box.type = "button";
       box.className = "locker";
+      if (L.caseId) box.dataset.caseId = L.caseId;
       box.setAttribute("aria-label", "私書箱 " + L.no + (L.caseId ? "(開いて中をタップするとケーススタディ)" : ""));
       box.setAttribute("aria-expanded", "false");
       box.style.left = pct(b[0], 1116);
@@ -1223,6 +1276,6 @@
   });
 })();
 </script>
-<script src="works-dial.js?v=42"></script>
+<script src="works-dial.js?v=43"></script>
 </body>
 </html>
