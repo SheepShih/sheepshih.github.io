@@ -90,7 +90,7 @@
     cursor: default;
   }
   .play-frame.lights-off .play-menu { visibility: visible; }
-  .play-frame.lights-off ~ .swipe-hint { opacity: 0 !important; } /* 明かりを消している間はスワイプしないので案内も消す */
+  .play-frame.lights-off ~ .swipe-hint { opacity: 0 !important; } /* 明かりを消している間は作品を切り替えないので案内も消す */
   .play-menu-link { /* Figma: Bentham 28px 白・中央、上 336px(画像 402×720 の中) */
     position: absolute;
     left: 50%;
@@ -469,7 +469,7 @@
     background: #ffe9b8;
     box-shadow: 0 0 6px 2px rgba(255, 196, 110, 0.9);
   }
-  /* トップの scroll と同じ案内。動きだけ左右に流れる。切り替えたら消える */
+  /* トップの scroll と同じ案内。指で押すように縮んで、波紋が広がる。切り替えたら消える */
   .swipe-hint {
     position: fixed;
     left: 50%;
@@ -491,12 +491,35 @@
     color: #fff;
     letter-spacing: 1px;
   }
-  .play-frame.content-in ~ .swipe-hint .swipe-text {
-    animation: swipe-hint-pulse 2s ease-in-out infinite;
+  .swipe-hint::after { /* タップの波紋(文字と別に動かして、薄くならないように) */
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 42px; /* 文字の中心(上の余白 30px + 24px の半分) */
+    width: 44px;
+    height: 44px;
+    margin: -22px 0 0 -22px;
+    border: 1.5px solid #fff;
+    border-radius: 50%;
+    opacity: 0;
+    transform: scale(0.4);
   }
-  @keyframes swipe-hint-pulse {
-    0%, 100% { opacity: 1;    transform: translateX(0); }
-    50%      { opacity: 0.35; transform: translateX(-12px); }
+  .play-frame.content-in ~ .swipe-hint .swipe-text {
+    animation: tap-hint-press 1.8s ease-in-out infinite;
+  }
+  .play-frame.content-in ~ .swipe-hint::after {
+    animation: tap-hint-ripple 1.8s ease-out infinite;
+  }
+  @keyframes tap-hint-press {
+    0%, 28%, 100% { transform: scale(1);    opacity: 1; }
+    12%           { transform: scale(0.82); opacity: 0.7; }
+    60%           { transform: scale(1);    opacity: 0.55; }
+  }
+  @keyframes tap-hint-ripple {
+    0%, 12% { opacity: 0;   transform: scale(0.4); }
+    16%     { opacity: 0.9; transform: scale(0.6); }
+    60%     { opacity: 0;   transform: scale(1.7); }
+    100%    { opacity: 0;   transform: scale(1.7); }
   }
 
   /* App Store未公開の作品はボタンを押せない状態で表示 */
@@ -509,7 +532,8 @@
     .play-content { visibility: visible; }
     .play-app-icon, .play-links, .play-lights { opacity: 1; animation: none !important; }
     .swipe-hint { opacity: 1; }
-    .play-frame.content-in ~ .swipe-hint .swipe-text { animation: none; }
+    .play-frame.content-in ~ .swipe-hint .swipe-text,
+    .play-frame.content-in ~ .swipe-hint::after { animation: none; }
   }
 </style>
 </head>
@@ -546,7 +570,7 @@
   <div class="stage-curtain right" aria-hidden="true"></div>
 </div>
 
-<div class="swipe-hint" aria-hidden="true"><p class="swipe-text">swipe</p></div>
+<div class="swipe-hint" aria-hidden="true"><p class="swipe-text">tap</p></div>
 
 <!-- PC幅のみの装飾は pc-deco.js が注入する(index/about/works/play共通) -->
 <script src="pc-deco.js?v=28"></script>
