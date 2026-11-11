@@ -469,7 +469,7 @@
     background: #ffe9b8;
     box-shadow: 0 0 6px 2px rgba(255, 196, 110, 0.9);
   }
-  /* トップの scroll と同じ案内。指で押すように縮む。切り替えたら消える */
+  /* トップの scroll と同じ案内。心臓の鼓動のように、ゆっくり2回ふくらむ。切り替えたら消える */
   .swipe-hint {
     position: fixed;
     left: 50%;
@@ -492,12 +492,14 @@
     letter-spacing: 1px;
   }
   .play-frame.content-in ~ .swipe-hint .swipe-text {
-    animation: tap-hint-press 1.8s ease-in-out infinite;
+    animation: tap-hint-beat 2.8s ease-in-out infinite;
   }
-  @keyframes tap-hint-press {
-    0%, 28%, 100% { transform: scale(1);    opacity: 1; }
-    12%           { transform: scale(0.82); opacity: 0.7; }
-    60%           { transform: scale(1);    opacity: 0.55; }
+  @keyframes tap-hint-beat { /* 心臓の鼓動: ドクン(大)・ドクン(小)のあと、ゆっくり休む */
+    0%       { transform: scale(1);    opacity: 0.75; }
+    12%      { transform: scale(1.14); opacity: 1; }
+    24%      { transform: scale(1);    opacity: 0.85; }
+    34%      { transform: scale(1.08); opacity: 1; }
+    50%, 100% { transform: scale(1);   opacity: 0.75; }
   }
 
   /* App Store未公開の作品はボタンを押せない状態で表示 */
