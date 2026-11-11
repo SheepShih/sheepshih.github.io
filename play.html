@@ -444,31 +444,6 @@
     to   { transform: scaleX(-1) rotate(360deg); }
   }
 
-  /* 今の上映作品を示す電球(作品の数だけ並ぶ) */
-  .play-lights {
-    position: absolute;
-    left: 50%;
-    top: 65.6%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 12px;
-    opacity: 0;
-    transition: opacity 0.6s ease 0.4s;
-  }
-  .play-frame.content-in .play-lights { opacity: 1; }
-  .play-lights i {
-    display: block;
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    background: #6d5a4c;
-    box-shadow: inset 0 0 0 1px rgba(255, 225, 180, 0.3);
-    transition: background 0.3s ease, box-shadow 0.3s ease;
-  }
-  .play-lights i.on {
-    background: #ffe9b8;
-    box-shadow: 0 0 6px 2px rgba(255, 196, 110, 0.9);
-  }
   /* トップの scroll と同じ案内。心臓の鼓動のように、ゆっくり2回ふくらむ。切り替えたら消える */
   .swipe-hint {
     position: fixed;
@@ -510,7 +485,7 @@
   @media (prefers-reduced-motion: reduce) {
     .stage-curtain { display: none; }
     .play-content { visibility: visible; }
-    .play-app-icon, .play-links, .play-lights { opacity: 1; animation: none !important; }
+    .play-app-icon, .play-links { opacity: 1; animation: none !important; }
     .swipe-hint { opacity: 1; }
     .play-frame.content-in ~ .swipe-hint .swipe-text { animation: none; }
   }
@@ -539,7 +514,6 @@
       </a>
     </div>
     <div class="film-leader" aria-hidden="true"><span id="leaderNum">2</span></div>
-    <div class="play-lights" id="playLights" aria-hidden="true"></div>
   </div>
   <button type="button" class="play-hotspot sign" aria-label="看板(明かりを消してトップへ戻るメニューを出す)"></button>
   <button type="button" class="play-hotspot sconce-l" aria-label="左の壁の明かり(明かりを消してトップへ戻るメニューを出す)"></button>
@@ -785,9 +759,8 @@
   var iconEl = document.getElementById("playIcon");
   var noteEl = document.getElementById("playNote");
   var storeEl = document.getElementById("playStore");
-  var lights = document.getElementById("playLights");
 
-  PROJECTS.forEach(function (p) { new Image().src = p.icon; lights.appendChild(document.createElement("i")); });
+  PROJECTS.forEach(function (p) { new Image().src = p.icon; });
 
   function showProject(i) {
     var p = PROJECTS[i];
@@ -806,7 +779,6 @@
       storeEl.setAttribute("aria-disabled", "true");
       storeEl.setAttribute("aria-label", "App Store 近日公開");
     }
-    Array.prototype.forEach.call(lights.children, function (el, n) { el.classList.toggle("on", n === i); });
   }
   showProject(0);
 
