@@ -310,8 +310,9 @@
     overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
-    /* 上の帯(タブ)の後ろはオレンジにする。拡大・縮小で端が 1px ずれても、上に薄い線が出ないように */
-    background: linear-gradient(#df9079 40px, var(--overlay-bg, #f2eee3) 40px);
+    /* 地の色はケースの色(上の帯の線は、固定したタブの帯の ::before がふさぐ) */
+    background-color: var(--overlay-bg, #f2eee3);
+    transition: background-color 0.3s ease; /* タブで切り替えたとき、地の色をなめらかに変える */
     color: #000;
     visibility: hidden;
     scrollbar-width: none;
@@ -322,15 +323,20 @@
   /* ケースが開ききったら、後ろの店内(枠)を隠す。枠とケースの端が少しでもずれると、
      店内の明るい天井が細い線に見えるため。後ろは背景と同じオレンジになる */
   .works-frame.case-covered { visibility: hidden; }
-  /* 開くとき: 開いた私書箱の大きさから、手紙を取り出すように枠いっぱいへ広がる(JS が clip-path を動かす)。
-     中身は少し下から浮き上がって出てくる */
-  .case-overlay.opening .case { animation: case-rise 0.75s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
-  .case.rise .case-content, .case.rise .case-back { animation: case-switch 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both; } /* タブで切り替えたとき */
-  @keyframes case-switch { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
-  @keyframes case-rise {
-    0%, 45% { opacity: 0; transform: translateY(24px); } /* 広がりきる少し前から出す */
-    100% { opacity: 1; transform: none; }
-  }
+  /* 開く・閉じるとき: まず「そのケースの色の紙」だけが私書箱から枠いっぱいに広がり(JS が clip-path を動かす)、
+     広がりきってからタブと本文が出る。閉じるときは逆に、本文とタブが消えてから紙が私書箱へ戻る */
+  .case-overlay.is-paper .case { opacity: 0; }
+  .case-overlay.is-closing .case { transition: opacity 0.16s ease; } /* 閉じるときだけ、本文とタブをすっと消す */
+  .case-overlay.is-entering .case-tabs { animation: case-fade 0.3s ease-out both; }
+  .case-overlay.is-entering .case-content,
+  .case-overlay.is-entering .case-back,
+  .case-overlay.is-switching .case-content,
+  .case-overlay.is-switching .case-back { animation: case-in 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) both; } /* 切り替えのときタブは動かさない */
+  /* タブで切り替えるとき: 今の本文がすっと消え、地の色が変わり、新しい本文が出る(タブはそのまま) */
+  .case-overlay.is-leaving .case-content,
+  .case-overlay.is-leaving .case-back { opacity: 0; transition: opacity 0.14s ease; }
+  @keyframes case-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes case-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
   .case {
     --case-serif: Palatino, "Palatino Linotype", "Book Antiqua", "URW Palladio L", P052, serif;
     --case-mincho: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", serif;
@@ -342,7 +348,7 @@
     gap: 120px;
     padding-bottom: 120px;
     /* 一番上の帯の部分はオレンジ。拡大表示で地のクリーム色が帯の上に 1px はみ出して線に見えないように */
-    background: linear-gradient(#df9079 32px, var(--case-bg) 32px);
+    background: linear-gradient(#df9079 32px, transparent 32px); /* 地の色は枠(.case-overlay)の色。切り替えで色をなめらかに変えるため */
     font-family: var(--case-gothic);
     font-size: 13px;
     line-height: 23px; /* Figma の 1.8 は px に丸められて 23px */
@@ -458,7 +464,11 @@
     cursor: pointer;
   }
   .case-back-btn:focus-visible, .case-meta a:focus-visible { outline: 2px solid #000; outline-offset: 4px; }
-  @media (prefers-reduced-motion: reduce) { .case-overlay.opening .case, .case.rise .case-content, .case.rise .case-back { animation: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    .case-overlay, .case-overlay .case { transition: none; }
+    .case-overlay.is-entering .case-tabs, .case-overlay.is-entering .case-content, .case-overlay.is-entering .case-back,
+    .case-overlay.is-switching .case-content, .case-overlay.is-switching .case-back { animation: none; }
+  }
   .dial-status {
     position: absolute;
     width: 1px;
@@ -806,7 +816,7 @@
     caseOverlay.addEventListener("click", function (e) {
       if (e.target.closest(".case-back-btn")) { closeCase(); return; }
       var tab = e.target.closest(".case-tab");
-      if (tab && !tab.disabled && !tab.classList.contains("is-current")) switchCase(tab.dataset.tab);
+      if (tab && !tab.disabled && !tab.classList.contains("is-current")) switchCase(tab.dataset.tab, e.detail === 0);
     });
     // タブの重なり: 開いているケースが一番手前、ほかはそこから近い順
     caseOverlay.querySelectorAll(".case").forEach(function (c) {
@@ -826,40 +836,44 @@
     });
   }
   // 開いた私書箱(from)の位置を、枠の中の clip-path(inset)にする
-  var CASE_MS = 650, caseFromBox = null, caseTimer = null;
+  var CASE_MS = 520, caseFromBox = null, caseTimer = null;
   function boxInset(el) {
     var r = caseOverlay.getBoundingClientRect(), b = el.getBoundingClientRect();
     return "inset(" + [b.top - r.top, r.right - b.right, r.bottom - b.bottom, b.left - r.left]
       .map(function (v) { return Math.max(0, v).toFixed(1) + "px"; }).join(" ") + ")";
   }
   var clipAnim = null;
-  function clipTo(from, to, ms, done) { // 箱の形 ⇄ 枠いっぱい(Web Animations。Safari でも確実に動く)
+  function clipTo(from, to, ms, easing, done) { // 箱の形 ⇄ 枠いっぱい(Web Animations。Safari でも確実に動く)
     if (clipAnim) clipAnim.cancel();
     clearTimeout(caseTimer);
     if (!caseOverlay.animate) { done(); return; }
     clipAnim = caseOverlay.animate(
       [{ clipPath: from, webkitClipPath: from }, { clipPath: to, webkitClipPath: to }],
-      { duration: ms, easing: "cubic-bezier(0.65, 0, 0.35, 1)", fill: "forwards" });
+      { duration: ms, easing: easing, fill: "forwards" });
     clipAnim.onfinish = function () { done(); };
   }
   function openCase(id, fromEl) {
     if (!caseOverlay) return false;
     var target = caseOverlay.querySelector('.case[data-case="' + id + '"]');
     if (!target) return false;
-    caseOverlay.querySelectorAll(".case").forEach(function (c) { c.classList.toggle("show", c === target); c.classList.remove("rise"); });
+    caseOverlay.querySelectorAll(".case").forEach(function (c) { c.classList.toggle("show", c === target); });
+    caseOverlay.classList.remove("is-entering", "is-leaving", "is-closing");
+    caseOverlay.style.transition = "none"; // 開くときは色を一瞬で合わせる(前に開いたケースの色から変わっていかないように)
     showCaseBg(target);
     fitCase();
+    void caseOverlay.offsetWidth;
+    caseOverlay.style.transition = "";
     caseOverlay.scrollTop = 0;
     caseFromBox = fromEl || null;
     if (fromEl && !reduceMotion) {
-      // 箱の大きさで現れて、枠いっぱいに広がる
-      caseOverlay.classList.remove("opening");
-      void caseOverlay.offsetWidth;
-      caseOverlay.classList.add("opening");
-      caseOverlay.classList.add("show");
-      clipTo(boxInset(fromEl), "inset(0px 0px 0px 0px)", CASE_MS, function () {
+      // 紙だけが箱の大きさから枠いっぱいに広がり、広がりきってからタブと本文が出る
+      caseOverlay.classList.add("is-paper", "show");
+      clipTo(boxInset(fromEl), "inset(0px 0px 0px 0px)", CASE_MS, "cubic-bezier(0.22, 1, 0.36, 1)", function () {
         if (clipAnim) { clipAnim.cancel(); clipAnim = null; }
         frame.classList.add("case-covered");
+        caseOverlay.classList.remove("is-paper");
+        caseOverlay.classList.add("is-entering");
+        caseTimer = setTimeout(function () { caseOverlay.classList.remove("is-entering"); }, 450);
       });
     } else {
       frame.classList.add("case-covered");
@@ -871,18 +885,32 @@
     return true;
   }
   // タブで別のケースへ(その場で切り替えて、上から読めるようにする)
-  function switchCase(id) {
+  var switching = false;
+  function switchCase(id, byKey) {
     var target = caseOverlay.querySelector('.case[data-case="' + id + '"]');
-    if (!target) return;
-    caseOverlay.querySelectorAll(".case").forEach(function (c) { c.classList.toggle("show", c === target); c.classList.remove("rise"); });
-    showCaseBg(target);
-    fitCase();
-    caseOverlay.scrollTop = 0;
-    if (!reduceMotion) { void target.offsetWidth; target.classList.add("rise"); }
+    if (!target || switching) return;
     caseFromBox = lockerFor(id);
-    var cur = target.querySelector(".case-tab.is-current");
-    if (cur) cur.focus({ preventScroll: true });
     try { history.replaceState({ caseId: id }, ""); } catch (err) {}
+    function swap() {
+      caseOverlay.querySelectorAll(".case").forEach(function (c) { c.classList.toggle("show", c === target); });
+      showCaseBg(target); // 地の色は 0.3 秒で変わる
+      fitCase();
+      caseOverlay.scrollTop = 0;
+      caseOverlay.classList.remove("is-leaving", "is-entering", "is-switching");
+      void caseOverlay.offsetWidth;
+      if (!reduceMotion) caseOverlay.classList.add("is-switching");
+      var cur = target.querySelector(".case-tab.is-current");
+      if (byKey && cur) cur.focus({ preventScroll: true }); // キーボードで切り替えたときだけ、新しいタブへ移る(タップでは枠線を出さない)
+      else caseOverlay.focus({ preventScroll: true });
+      clearTimeout(caseTimer);
+      caseTimer = setTimeout(function () { caseOverlay.classList.remove("is-switching"); switching = false; }, 450);
+      if (reduceMotion) switching = false;
+    }
+    if (reduceMotion) { swap(); return; }
+    switching = true;
+    caseOverlay.classList.remove("is-entering", "is-switching");
+    caseOverlay.classList.add("is-leaving"); // 今の本文を 0.14 秒で消してから切り替える
+    setTimeout(swap, 150);
   }
   function showCaseBg(c) { // スクロールの端で見える枠の地も、そのケースの色に
     caseOverlay.style.setProperty("--overlay-bg", getComputedStyle(c).getPropertyValue("--case-bg"));
@@ -895,12 +923,18 @@
   function hideCase() {
     frame.classList.remove("case-covered"); // 縮んで戻る間は店内が見えるように
     function done() {
-      caseOverlay.classList.remove("show", "opening");
+      caseOverlay.classList.remove("show", "is-paper", "is-entering", "is-leaving", "is-closing");
       if (clipAnim) { clipAnim.cancel(); clipAnim = null; }
     }
     if (caseFromBox && !reduceMotion) {
-      // 閉じるときは、元の私書箱の中へ縮んで戻る
-      clipTo("inset(0px 0px 0px 0px)", boxInset(caseFromBox), 450, done);
+      // 閉じるときは、本文とタブを消してから、紙だけが元の私書箱の中へ縮んで戻る
+      clearTimeout(caseTimer);
+      caseOverlay.classList.remove("is-entering");
+      caseOverlay.classList.add("is-closing", "is-paper");
+      var to = boxInset(caseFromBox);
+      caseTimer = setTimeout(function () {
+        clipTo("inset(0px 0px 0px 0px)", to, 400, "cubic-bezier(0.55, 0, 0.75, 0.2)", done);
+      }, 160);
     } else {
       done();
     }
