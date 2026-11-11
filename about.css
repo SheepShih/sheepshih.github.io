@@ -9,7 +9,7 @@
   --font-head: "Anton", "Arial Narrow", sans-serif;
   /* 本文のゴシック。Figma の TB新聞ゴシック(モリサワ・Web では使えない)の代わりに Zen Kaku Gothic New。
      TB新聞ゴシック M → 500、TB新聞見出ゴシック Heavy → 900 */
-  --font-jp: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", sans-serif;
+  --font-jp: "Zen Kaku Gothic New", "Noto Sans JP", "Hiragino Kaku Gothic ProN", sans-serif; /* Noto は「婷」だけ */
 }
 
 * {

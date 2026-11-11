@@ -346,18 +346,27 @@
     right: 0;
     height: 33.4%;
     background: var(--sheet-bg, #f2eee3);
+    overflow: hidden;
     backface-visibility: visible;
     -webkit-backface-visibility: visible;
   }
+  /* 手紙の内側には、ケースのページの中身が刷ってある(開くときはまだ現像前のうすい状態)。
+     外側(折りたたんだときに見える面)は無地。上下のパネルは、真横を過ぎて内側が見える間だけ中身を出す */
+  .case-sheet-print { position: absolute; left: 0; width: 100%; pointer-events: none; }
+  .case-sheet-print .case { background: transparent; }
+  .case-sheet-print .case-tabs { visibility: hidden; }
+  .case-sheet-print.undeveloped { opacity: 0.45; filter: brightness(1.9) contrast(0.35) sepia(0.5) blur(4px); }
   .case-sheet-panel.mid { top: 33.3%; }
   .case-sheet-panel.bot { top: 66.6%; transform-origin: 50% 0; }
   .case-sheet-panel.top { top: 0; transform-origin: 50% 100%; }
   .case-sheet-shade { position: absolute; inset: 0; background: #5a3020; opacity: 0; }
-  /* 紙の折り目に沿った、ごく薄い影(紙らしさ)。開ききるときに消える */
+  /* 折り目: 細い線(1〜2px)と、ほんの少しの光。開ききるときに消える */
   .case-sheet-crease {
     position: absolute;
     inset: 0;
-    background: linear-gradient(rgba(90, 50, 30, 0.08), rgba(90, 50, 30, 0) 6%, rgba(90, 50, 30, 0) 94%, rgba(90, 50, 30, 0.08));
+    background:
+      linear-gradient(rgba(90, 50, 30, 0.2), rgba(90, 50, 30, 0) 1.5px, rgba(255, 255, 255, 0.35) 1.5px, rgba(255, 255, 255, 0) 3px),
+      linear-gradient(to top, rgba(90, 50, 30, 0.2), rgba(90, 50, 30, 0) 1.5px, rgba(255, 255, 255, 0.35) 1.5px, rgba(255, 255, 255, 0) 3px);
   }
   .case-overlay.is-closing .case { transition: opacity 0.16s ease; } /* 閉じるときだけ、本文とタブをすっと消す */
   /* ページが出るとき: 帯が出て、タブが #01 から順に上からピョコッと落ちてきて、
@@ -376,7 +385,7 @@
   .case-overlay.is-entering .case-back { animation: case-fade 0.6s ease 1.2s both; } /* ファーストビューより下(スクロールで見える) */
   @keyframes tab-pop { from { transform: translateY(-120%); } to { transform: none; } } /* 上から落ちてきて弾む */
   @keyframes case-develop { /* About の写真の「現像」と同じ: 白っぽくぼやけたセピアから、くっきりした色へ */
-    from { opacity: 0; filter: brightness(1.9) contrast(0.35) sepia(0.5) blur(4px); }
+    from { opacity: 0.45; filter: brightness(1.9) contrast(0.35) sepia(0.5) blur(4px); } /* 手紙の内側に刷ってあった、うすい状態から */
     to { opacity: 1; filter: none; }
   }
   .case-overlay.is-switching .case-content,
@@ -900,9 +909,9 @@
     caseSheet = document.createElement("div");
     caseSheet.className = "case-sheet";
     // 描く順(真ん中 → 下 → 上)が重なり順。上のパネルが一番手前に折り重なる
-    caseSheet.innerHTML = '<span class="case-sheet-panel mid"><span class="case-sheet-crease"></span></span>' +
-      '<span class="case-sheet-panel bot"><span class="case-sheet-shade"></span></span>' +
-      '<span class="case-sheet-panel top"><span class="case-sheet-shade"></span></span>';
+    caseSheet.innerHTML = '<span class="case-sheet-panel mid"><span class="case-sheet-print"></span><span class="case-sheet-crease"></span></span>' +
+      '<span class="case-sheet-panel bot"><span class="case-sheet-print"></span><span class="case-sheet-shade"></span></span>' +
+      '<span class="case-sheet-panel top"><span class="case-sheet-print"></span><span class="case-sheet-shade"></span></span>';
     document.body.appendChild(caseSheet);
     window.addEventListener("resize", fitCase);
     window.addEventListener("keydown", function (e) {
@@ -966,8 +975,21 @@
     sheetAnims.forEach(function (a) { a.cancel(); });
     sheetAnims = [];
   }
+  // 手紙の内側に、いま見えているケースのページを刷る(パネルごとに、その 1/3 の位置)
+  function printSheet(developed) {
+    var c = caseOverlay.querySelector(".case.show"), st = caseOverlay.scrollTop;
+    if (!c) return;
+    caseSheet.querySelectorAll(".case-sheet-panel").forEach(function (panel) {
+      var w = panel.querySelector(".case-sheet-print");
+      w.innerHTML = "";
+      w.appendChild(c.cloneNode(true));
+      w.style.top = (-panel.offsetTop - st) + "px";
+      w.classList.toggle("undeveloped", !developed);
+    });
+  }
   function sheetParts() {
     return { top: caseSheet.querySelector(".top"), bot: caseSheet.querySelector(".bot"), crease: caseSheet.querySelector(".case-sheet-crease"),
+             topPrint: caseSheet.querySelector(".top .case-sheet-print"), botPrint: caseSheet.querySelector(".bot .case-sheet-print"),
              topShade: caseSheet.querySelector(".top .case-sheet-shade"), botShade: caseSheet.querySelector(".bot .case-sheet-shade") };
   }
   function openCase(id, fromEl) {
@@ -988,6 +1010,7 @@
       // 折りたたまれた手紙が私書箱から飛び出して持ち上がり、真ん中で三つ折りを開いて(少し弾んで)枠いっぱいになる。
       // 開ききってからタブと本文が出る
       var r = placeSheet(), sp = sheetParts();
+      printSheet(false);
       rustle(0.22, 0.28, 2200);
       setTimeout(function () { rustle(0.14, 0.18, 1500); }, 560); // 上を開く音
       setTimeout(function () { rustle(0.14, 0.18, 1300); }, 760); // 下を開く音
@@ -1011,7 +1034,10 @@
           { opacity: 0.04, offset: 0 }, { opacity: 0.04, offset: 0.5 }, { opacity: 0.22, offset: 0.59 }, { opacity: 0, offset: 0.68 }, { opacity: 0, offset: 1 }]],
         [sp.botShade, [
           { opacity: 0.04, offset: 0 }, { opacity: 0.04, offset: 0.64 }, { opacity: 0.22, offset: 0.73 }, { opacity: 0, offset: 0.82 }, { opacity: 0, offset: 1 }]],
-        [sp.crease, [{ opacity: 1, offset: 0 }, { opacity: 1, offset: 0.82 }, { opacity: 0, offset: 1 }]] // 着地しながら折り目が消える
+        [sp.crease, [{ opacity: 1, offset: 0 }, { opacity: 1, offset: 0.82 }, { opacity: 0, offset: 1 }]], // 着地しながら折り目が消える
+        // 上下のパネルは、真横を過ぎて内側がこちらを向いてから中身を見せる(それまでは無地の外側)
+        [sp.topPrint, [{ opacity: 0, offset: 0 }, { opacity: 0, offset: 0.589 }, { opacity: 1, offset: 0.59 }, { opacity: 1, offset: 1 }]],
+        [sp.botPrint, [{ opacity: 0, offset: 0 }, { opacity: 0, offset: 0.729 }, { opacity: 1, offset: 0.73 }, { opacity: 1, offset: 1 }]]
       ], 1250, function () {
         // 手紙の下でページを出し、手紙(と影)を 0.3 秒で薄くして入れ替える(一瞬で差し替えない)
         caseOverlay.classList.remove("is-paper");
@@ -1080,10 +1106,12 @@
       // その箱が閉まっていれば扉を開けて迎え入れ、最初に開けた箱が別なら、そちらの扉は閉める
       clearTimeout(caseTimer);
       caseOverlay.classList.remove("is-entering");
-      caseOverlay.classList.add("is-closing", "is-paper");
       caseTimer = setTimeout(function () {
+        // いま読んでいるページ(スクロール位置もそのまま)が、そのまま手紙になって折りたたまれる
         var r = placeSheet();
-        caseOverlay.classList.remove("show");
+        printSheet(true);
+        caseSheet.classList.add("show");
+        caseOverlay.classList.remove("show"); // 同じ瞬間に、ページを手紙に入れ替える
         if (box.openDoor) box.openDoor();
         if (first && first !== box && first.closeDoor) first.closeDoor();
         var sp = sheetParts(), FOLD = "cubic-bezier(0.45, 0, 0.25, 1)";
@@ -1105,14 +1133,16 @@
             { opacity: 0, offset: 0 }, { opacity: 0.22, offset: 0.11 }, { opacity: 0.04, offset: 0.22 }, { opacity: 0.04, offset: 1 }]],
           [sp.topShade, [
             { opacity: 0, offset: 0 }, { opacity: 0, offset: 0.18 }, { opacity: 0.22, offset: 0.29 }, { opacity: 0.04, offset: 0.4 }, { opacity: 0.04, offset: 1 }]],
-          [sp.crease, [{ opacity: 0, offset: 0 }, { opacity: 1, offset: 0.2 }, { opacity: 1, offset: 1 }]]
+          [sp.crease, [{ opacity: 0, offset: 0 }, { opacity: 1, offset: 0.2 }, { opacity: 1, offset: 1 }]],
+          [sp.botPrint, [{ opacity: 1, offset: 0 }, { opacity: 1, offset: 0.11 }, { opacity: 0, offset: 0.111 }, { opacity: 0, offset: 1 }]],
+          [sp.topPrint, [{ opacity: 1, offset: 0 }, { opacity: 1, offset: 0.29 }, { opacity: 0, offset: 0.291 }, { opacity: 0, offset: 1 }]]
         ], 1000, function () {
           knock(420, 0.5, 0.07); // 私書箱に入った「コトン」
           endSheet();
           done();
           if (box.closeDoor) setTimeout(box.closeDoor, 120); // 扉も閉める
         });
-      }, 160);
+      }, 0);
     } else {
       done();
     }

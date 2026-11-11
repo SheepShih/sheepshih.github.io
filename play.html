@@ -39,7 +39,7 @@
     aspect-ratio: 768 / 1376;
     max-height: 100dvh;
     overflow: hidden;
-    cursor: pointer; /* シーン全体をタップでトップへ戻れる(ボタンは非表示) */
+    cursor: default; /* スクリーンの外をタップしても何もしない */
   }
 
   .play-img {
@@ -452,7 +452,7 @@
 </head>
 <body>
 
-<div class="play-frame" id="playFrame" role="link" tabindex="0" aria-label="トップへ戻る">
+<div class="play-frame" id="playFrame">
   <div class="stage-scene">
     <img class="play-img" src="assets/img/play-theater.webp?v=2" alt="Shih TingFang Diner — Play: NOW SHOWING の劇場ステージ" draggable="false">
     <div class="stage-fx marquee-glow" aria-hidden="true"></div>
@@ -789,15 +789,10 @@
   }, true);
 
   // スクリーン内のタップ = 次の作品へ / ボタンはリンク / それ以外のシーンはトップへ戻る
-  var goHome = function () { window.location.href = "home.html"; };
+  // スクリーンの外をタップしても、トップへは戻らない(何もしない)
   frame.addEventListener("click", function (e) {
     if (e.target.closest(".play-links, .screen-zone")) return;
     if (e.target.closest(".screen-tap, .play-app-icon")) { switchProject(1); return; }
-    goHome();
-  });
-  frame.addEventListener("keydown", function (e) {
-    if (e.target !== frame) return; // ボタンにフォーカスがあるときのEnterはリンクを開く
-    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goHome(); }
   });
 })();
 </script>
