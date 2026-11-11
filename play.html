@@ -49,6 +49,69 @@
     object-fit: cover;
   }
 
+  /* ---------- 明かりを消すと「Back to the restaurant」(Figma node 407-133) ----------
+     看板か左右のウォールスコンスをタップすると、劇場の明かりがチカチカと消え(明かりを消した写真に切り替え)、
+     スクリーンに白い文字が出る。文字をタップでトップへ、ほかをタップすると明かりがつく */
+  .play-frame { container-type: inline-size; }
+  .play-img-dark {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease;
+  }
+  .play-frame.lights-off .play-img-dark { opacity: 1; animation: lights-flicker 0.55s linear both; }
+  @keyframes lights-flicker { /* パチッ…チカチカ…と消える */
+    0% { opacity: 0; } 12% { opacity: 0.85; } 22% { opacity: 0.25; } 38% { opacity: 1; } 52% { opacity: 0.55; } 66%, 100% { opacity: 1; }
+  }
+  .play-frame.lights-off .stage-fx { opacity: 0 !important; transition: opacity 0.2s; }
+  .play-frame.lights-off .play-content { opacity: 0; visibility: hidden; transition: opacity 0.2s, visibility 0s 0.2s; }
+  .play-hotspot {
+    position: absolute;
+    z-index: 3;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .play-hotspot:focus-visible { outline: 2px solid #fff6dc; outline-offset: 2px; }
+  .play-hotspot.sign     { left: 9.9%;  top: 3.6%;  width: 80.6%; height: 16.5%; } /* 写真(1116×2000)で x110〜1010・y72〜402 */
+  .play-hotspot.sconce-l { left: 0;     top: 46.5%; width: 7.5%;  height: 6.5%; }  /* 左の壁の明かり */
+  .play-hotspot.sconce-r { left: 92.5%; top: 46.5%; width: 7.5%;  height: 6.5%; }  /* 右の壁の明かり */
+  .play-menu {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    visibility: hidden;
+    cursor: default;
+  }
+  .play-frame.lights-off .play-menu { visibility: visible; }
+  .play-frame.lights-off ~ .swipe-hint { opacity: 0 !important; } /* 明かりを消している間はスワイプしないので案内も消す */
+  .play-menu-link { /* Figma: Bentham 28px 白・中央、上 336px(画像 402×720 の中) */
+    position: absolute;
+    left: 50%;
+    top: 46.67%;
+    transform: translateX(-50%);
+    font-family: "Bentham", serif;
+    font-size: 6.965cqw;
+    line-height: 1;
+    color: #fff;
+    text-align: center;
+    text-shadow: 0 0 0.995cqw rgba(148, 43, 13, 0.5);
+    text-decoration: none;
+    white-space: nowrap;
+    opacity: 0;
+  }
+  .play-frame.lights-off .play-menu-link { animation: play-menu-in 0.5s ease-out 0.45s both; }
+  @keyframes play-menu-in { from { opacity: 0; transform: translate(-50%, 0.8cqw); } to { opacity: 1; transform: translateX(-50%); } }
+  @media (prefers-reduced-motion: reduce) {
+    .play-frame.lights-off .play-img-dark, .play-frame.lights-off .play-menu-link { animation: none; opacity: 1; }
+  }
+
   /* ---------- 登場演出: 赤いベルベットの幕が左右に開く ---------- */
   /* 読み込み中は幕が閉じた状態でシーンを隠し、画像の準備ができたら
      .curtain-open を付けて左右の袖へたぐり寄せる(折り目が縮んで束になる) */
@@ -455,6 +518,7 @@
 <div class="play-frame" id="playFrame">
   <div class="stage-scene">
     <img class="play-img" src="assets/img/play-theater.webp?v=2" alt="Shih TingFang Diner — Play: NOW SHOWING の劇場ステージ" draggable="false">
+    <img class="play-img-dark" src="assets/img/play-theater-dark.webp?v=1" alt="" draggable="false">
     <div class="stage-fx marquee-glow" aria-hidden="true"></div>
     <div class="stage-fx stage-spot" aria-hidden="true"></div>
   </div>
@@ -474,6 +538,10 @@
     <div class="film-leader" aria-hidden="true"><span id="leaderNum">2</span></div>
     <div class="play-lights" id="playLights" aria-hidden="true"></div>
   </div>
+  <button type="button" class="play-hotspot sign" aria-label="看板(明かりを消してトップへ戻るメニューを出す)"></button>
+  <button type="button" class="play-hotspot sconce-l" aria-label="左の壁の明かり(明かりを消してトップへ戻るメニューを出す)"></button>
+  <button type="button" class="play-hotspot sconce-r" aria-label="右の壁の明かり(明かりを消してトップへ戻るメニューを出す)"></button>
+  <div class="play-menu" id="playMenu"><a class="play-menu-link" href="home.html">Back to<br>the restaurant</a></div>
   <div class="stage-curtain left" aria-hidden="true"></div>
   <div class="stage-curtain right" aria-hidden="true"></div>
 </div>
@@ -772,6 +840,7 @@
   });
   window.addEventListener("pointerup", function (e) {
     if (startX === null) return;
+    if (frame.classList.contains("lights-off")) { startX = null; return; } // 明かりを消している間は作品を切り替えない
     var dx = e.clientX - startX, dy = e.clientY - startY;
     startX = null;
     if (Math.abs(dx) < SWIPE_MIN || Math.abs(dx) < Math.abs(dy)) return;
@@ -780,6 +849,10 @@
   });
   window.addEventListener("pointercancel", function () { startX = null; });
   window.addEventListener("keydown", function (e) {
+    if (frame.classList.contains("lights-off")) {
+      if (e.key === "Escape") lightsOn();
+      return;
+    }
     if (e.key === "ArrowLeft") switchProject(-1);
     if (e.key === "ArrowRight") switchProject(1);
   });
@@ -789,6 +862,39 @@
   }, true);
 
   // スクリーン内のタップ = 次の作品へ / ボタンはリンク / それ以外のシーンはトップへ戻る
+  // 看板・ウォールスコンスのタップで明かりを消して、トップへ戻るメニューを出す
+  var switchCtx = null;
+  function switchClick() { // 電気のスイッチの「パチッ」
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      if (!switchCtx) switchCtx = new AC();
+      if (switchCtx.state === "suspended") switchCtx.resume();
+      var n = Math.floor(switchCtx.sampleRate * 0.03), buf = switchCtx.createBuffer(1, n, switchCtx.sampleRate), d = buf.getChannelData(0);
+      for (var i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 4);
+      var src = switchCtx.createBufferSource(), f = switchCtx.createBiquadFilter(), g = switchCtx.createGain();
+      src.buffer = buf; f.type = "bandpass"; f.frequency.value = 2400; f.Q.value = 1.2; g.gain.value = 0.6;
+      src.connect(f); f.connect(g); g.connect(switchCtx.destination); src.start();
+    } catch (err) {}
+  }
+  function lightsOff(byKey) {
+    if (frame.classList.contains("lights-off")) return;
+    switchClick();
+    frame.classList.add("lights-off");
+    if (byKey) setTimeout(function () { frame.querySelector(".play-menu-link").focus({ preventScroll: true }); }, 500);
+  }
+  function lightsOn() {
+    if (!frame.classList.contains("lights-off")) return;
+    switchClick();
+    frame.classList.remove("lights-off");
+  }
+  frame.querySelectorAll(".play-hotspot").forEach(function (b) {
+    b.addEventListener("click", function (e) { e.stopPropagation(); lightsOff(e.detail === 0); });
+  });
+  frame.querySelector(".play-menu").addEventListener("click", function (e) {
+    if (!e.target.closest("a")) { e.stopPropagation(); lightsOn(); } // 文字以外をタップすると明かりがつく
+  });
+
   // スクリーンの外をタップしても、トップへは戻らない(何もしない)
   frame.addEventListener("click", function (e) {
     if (e.target.closest(".play-links, .screen-zone")) return;
