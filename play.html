@@ -39,7 +39,7 @@
     aspect-ratio: 768 / 1376;
     max-height: 100dvh;
     overflow: hidden;
-    cursor: default; /* スクリーンの外をタップしても何もしない */
+    cursor: pointer; /* 看板・スコンス・ボタン以外はタップで次の作品へ */
   }
 
   .play-img {
@@ -365,7 +365,7 @@
     top: 37%;
     height: 32%;
     pointer-events: auto;
-    cursor: default;
+    cursor: pointer;
   }
   .screen-tap { /* タップで切り替える範囲 = スクリーンの白い部分 */
     position: absolute;
@@ -895,10 +895,11 @@
     if (!e.target.closest("a")) { e.stopPropagation(); lightsOn(); } // 文字以外をタップすると明かりがつく
   });
 
-  // スクリーンの外をタップしても、トップへは戻らない(何もしない)
+  // 看板・スコンス・ボタン以外なら、画面のどこをタップしても次の作品へ
   frame.addEventListener("click", function (e) {
-    if (e.target.closest(".play-links, .screen-zone")) return;
-    if (e.target.closest(".screen-tap, .play-app-icon")) { switchProject(1); return; }
+    if (frame.classList.contains("lights-off")) return;
+    if (e.target.closest(".play-links a, .play-hotspot, .play-menu")) return;
+    switchProject(1);
   });
 })();
 </script>
