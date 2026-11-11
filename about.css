@@ -7,7 +7,9 @@
   --paper-dark: #E5D8B8;
   --diner-bg: #DF9079; /* topページと共通の背景色 */
   --font-head: "Anton", "Arial Narrow", sans-serif;
-  --font-jp: "Noto Sans JP", "Hiragino Kaku Gothic ProN", sans-serif;
+  /* 本文のゴシック。Figma の TB新聞ゴシック(モリサワ・Web では使えない)にいちばん近い無料フォント Murecho。
+     TB新聞ゴシック M → 500、TB新聞見出ゴシック Heavy → 900 */
+  --font-jp: "Murecho", "Hiragino Kaku Gothic ProN", sans-serif;
 }
 
 * {
@@ -20,6 +22,7 @@ html, body {
   padding: 0;
   background: var(--diner-bg);
   font-family: var(--font-jp);
+  font-weight: 500;
 }
 
 body {

@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png?v=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bentham&family=Noto+Sans+JP:wght@500;800&family=Shippori+Mincho+B1:wght@800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bentham&family=Murecho:wght@500;800&family=Shippori+Mincho+B1:wght@800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="pc-deco.css?v=46">
 <style>
   :root { --diner-bg: #DF9079; --paper: #F5E9CA; }
@@ -334,7 +334,8 @@
   .case {
     --case-serif: Palatino, "Palatino Linotype", "Book Antiqua", "URW Palladio L", P052, serif;
     --case-mincho: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", serif;
-    --case-gothic: "TBNPGothic Std", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", "Yu Gothic", sans-serif;
+    /* 本文のゴシック。Figma の TB新聞ゴシック(モリサワ・Web では使えない)にいちばん近い無料フォント Murecho */
+    --case-gothic: "Murecho", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", sans-serif;
     display: none;
     width: 402px;
     flex-direction: column;
@@ -431,7 +432,7 @@
   .case .case-table-title h2 { font: 700 24px/1 var(--case-serif); }
   .case-table-title p { font: 800 13px/1 var(--case-mincho); }
   .case-text { padding: 40px 16px; border: 1px solid #000; border-top: 0; font-weight: 500; }
-  .case-text strong { font-family: "TBNPMDGothic Std", var(--case-gothic); font-weight: 800; }
+  .case-text strong { font-weight: 800; } /* TB新聞見出ゴシック ExBold の代わり */
   .case-text ul { list-style: disc; padding-left: 19.5px; }
   .case-text .case-gap { margin-top: 23px; }
   .case-text .case-gap2 { margin-top: 46px; } /* 空行2つぶん */
