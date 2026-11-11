@@ -353,17 +353,17 @@
   .case-sheet-panel.bot { top: 66.6%; transform-origin: 50% 0; }
   .case-sheet-panel.top { top: 0; transform-origin: 50% 100%; }
   .case-sheet-shade { position: absolute; inset: 0; background: #5a3020; opacity: 0; }
-  /* 紙の折り目に沿った、ごく薄い影(紙らしさ) */
-  .case-sheet-panel.mid::before {
-    content: "";
+  /* 紙の折り目に沿った、ごく薄い影(紙らしさ)。開ききるときに消える */
+  .case-sheet-crease {
     position: absolute;
     inset: 0;
     background: linear-gradient(rgba(90, 50, 30, 0.08), rgba(90, 50, 30, 0) 6%, rgba(90, 50, 30, 0) 94%, rgba(90, 50, 30, 0.08));
   }
   .case-overlay.is-closing .case { transition: opacity 0.16s ease; } /* 閉じるときだけ、本文とタブをすっと消す */
-  .case-overlay.is-entering .case-tabs { animation: case-fade 0.3s ease-out both; }
+  .case-overlay.is-entering .case { background: transparent; } /* 上のオレンジの帯は、タブと一緒にふわっと出す */
+  .case-overlay.is-entering .case-tabs { animation: case-fade 0.32s ease-out both; }
   .case-overlay.is-entering .case-content,
-  .case-overlay.is-entering .case-back,
+  .case-overlay.is-entering .case-back { animation: case-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) 0.08s both; }
   .case-overlay.is-switching .case-content,
   .case-overlay.is-switching .case-back { animation: case-in 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) both; } /* 切り替えのときタブは動かさない */
   /* タブで切り替えるとき: 今の本文がすっと消え、地の色が変わり、新しい本文が出る(タブはそのまま) */
@@ -884,7 +884,7 @@
     caseSheet = document.createElement("div");
     caseSheet.className = "case-sheet";
     // 描く順(真ん中 → 下 → 上)が重なり順。上のパネルが一番手前に折り重なる
-    caseSheet.innerHTML = '<span class="case-sheet-panel mid"></span>' +
+    caseSheet.innerHTML = '<span class="case-sheet-panel mid"><span class="case-sheet-crease"></span></span>' +
       '<span class="case-sheet-panel bot"><span class="case-sheet-shade"></span></span>' +
       '<span class="case-sheet-panel top"><span class="case-sheet-shade"></span></span>';
     document.body.appendChild(caseSheet);
@@ -951,7 +951,7 @@
     sheetAnims = [];
   }
   function sheetParts() {
-    return { top: caseSheet.querySelector(".top"), bot: caseSheet.querySelector(".bot"),
+    return { top: caseSheet.querySelector(".top"), bot: caseSheet.querySelector(".bot"), crease: caseSheet.querySelector(".case-sheet-crease"),
              topShade: caseSheet.querySelector(".top .case-sheet-shade"), botShade: caseSheet.querySelector(".bot .case-sheet-shade") };
   }
   function openCase(id, fromEl) {
@@ -993,13 +993,17 @@
         [sp.topShade, [
           { opacity: 0.04, offset: 0 }, { opacity: 0.04, offset: 0.5 }, { opacity: 0.22, offset: 0.59 }, { opacity: 0, offset: 0.68 }, { opacity: 0, offset: 1 }]],
         [sp.botShade, [
-          { opacity: 0.04, offset: 0 }, { opacity: 0.04, offset: 0.64 }, { opacity: 0.22, offset: 0.73 }, { opacity: 0, offset: 0.82 }, { opacity: 0, offset: 1 }]]
+          { opacity: 0.04, offset: 0 }, { opacity: 0.04, offset: 0.64 }, { opacity: 0.22, offset: 0.73 }, { opacity: 0, offset: 0.82 }, { opacity: 0, offset: 1 }]],
+        [sp.crease, [{ opacity: 1, offset: 0 }, { opacity: 1, offset: 0.82 }, { opacity: 0, offset: 1 }]] // 着地しながら折り目が消える
       ], 1250, function () {
+        // 手紙の下でページを出し、手紙(と影)を 0.3 秒で薄くして入れ替える(一瞬で差し替えない)
         caseOverlay.classList.remove("is-paper");
         caseOverlay.classList.add("show", "is-entering");
         frame.classList.add("case-covered");
-        requestAnimationFrame(function () { endSheet(); }); // 引数(時刻)を渡さない(keepShown と取り違えて手紙が残ってしまう)
-        caseTimer = setTimeout(function () { caseOverlay.classList.remove("is-entering"); }, 450);
+        var fade = caseSheet.animate ? caseSheet.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, easing: "ease-out", fill: "forwards" }) : null;
+        if (fade) sheetAnims.push(fade);
+        setTimeout(function () { endSheet(); }, 320);
+        caseTimer = setTimeout(function () { caseOverlay.classList.remove("is-entering"); }, 650);
       });
     } else {
       frame.classList.add("case-covered");
@@ -1080,7 +1084,8 @@
           [sp.botShade, [
             { opacity: 0, offset: 0 }, { opacity: 0.22, offset: 0.11 }, { opacity: 0.04, offset: 0.22 }, { opacity: 0.04, offset: 1 }]],
           [sp.topShade, [
-            { opacity: 0, offset: 0 }, { opacity: 0, offset: 0.18 }, { opacity: 0.22, offset: 0.29 }, { opacity: 0.04, offset: 0.4 }, { opacity: 0.04, offset: 1 }]]
+            { opacity: 0, offset: 0 }, { opacity: 0, offset: 0.18 }, { opacity: 0.22, offset: 0.29 }, { opacity: 0.04, offset: 0.4 }, { opacity: 0.04, offset: 1 }]],
+          [sp.crease, [{ opacity: 0, offset: 0 }, { opacity: 1, offset: 0.2 }, { opacity: 1, offset: 1 }]]
         ], 1000, function () {
           knock(420, 0.5, 0.07); // 私書箱に入った「コトン」
           endSheet();
