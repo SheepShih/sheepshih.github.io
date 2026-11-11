@@ -444,7 +444,9 @@
     white-space: nowrap;
   }
   .case-step h3 span { display: block; font-family: var(--case-serif); font-weight: 700; }
-  .case-step > p { align-self: stretch; }
+  .case-step > p, .case-step > ul { align-self: stretch; }
+  /* 本文が複数の段落に分かれているとき: 段落の間は空行ひとつ(23px)。flex の gap(16px)と二重にしない */
+  .case-text.case-step > .case-gap { margin-top: 7px; }
   .case-back-btn {
     padding: 0;
     border: 0;
@@ -1276,6 +1278,6 @@
   });
 })();
 </script>
-<script src="works-dial.js?v=43"></script>
+<script src="works-dial.js?v=44"></script>
 </body>
 </html>
