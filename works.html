@@ -380,7 +380,7 @@
   .case-overlay.is-entering .case-tab[data-tab="04"] { animation-delay: 0.23s; }
   .case-overlay.is-entering .case-tab[data-tab="05"] { animation-delay: 0.29s; }
   .case-overlay.is-entering .case-top { animation: case-develop 2s ease 0.25s both; }
-  .case-overlay.is-entering .case-meta { animation: case-develop 2s ease 0.55s both; }
+  .case-overlay.is-entering .case-content > .case-meta { animation: case-develop 2s ease 0.55s both; }
   .case-overlay.is-entering .case-list,
   .case-overlay.is-entering .case-back { animation: case-fade 0.6s ease 1.2s both; } /* ファーストビューより下(スクロールで見える) */
   @keyframes tab-pop { from { transform: translateY(-120%); } to { transform: none; } } /* 上から落ちてきて弾む */
@@ -484,6 +484,11 @@
   .case-meta dd.case-meta-en { font: 700 24px/1 var(--case-serif); }
   .case-meta a { color: inherit; text-decoration: underline; text-underline-position: from-font; }
   .case-list { display: flex; flex-direction: column; gap: 72px; }
+  /* CASE 05: 担当外の仕事を番号つきで並べる(番号の下に Product / Theme / Press Release) */
+  .case-list.case-proj-list { gap: 120px; }
+  .case-proj { display: flex; flex-direction: column; gap: 24px; }
+  .case-proj-no { font: italic 700 24px/1 var(--case-serif); }
+  .case-meta dd .case-meta-ja { font-family: var(--case-mincho); font-weight: 700; }
   .case-table-title {
     display: flex;
     align-items: center;
@@ -738,7 +743,7 @@
     { no: "#02", caseId: "02", label: [559.4, 476.4], box: [447, 429, 666, 746], ht: [644, 440], hb: [644, 736], ft: [736, 404], fb: [736, 706] },
     { no: "#03", caseId: "03", label: [337.3, 790.3], box: [227, 747, 446, 961], ht: [419, 760], hb: [419, 951], ft: [500, 749], fb: [500, 951] },
     { no: "#04", caseId: "04", label: [781.5, 790.3], box: [667, 747, 887, 961], ht: [868, 760], hb: [868, 951], ft: [971, 745], fb: [971, 951] },
-    { no: "#05", label: [559.4, 1005.5], box: [447, 962, 666, 1176], ht: [644, 976], hb: [644, 1172], ft: [736, 972], fb: [737, 1170] }
+    { no: "#05", caseId: "05", label: [559.4, 1005.5], box: [447, 962, 666, 1176], ht: [644, 976], hb: [644, 1172], ft: [736, 972], fb: [737, 1170] }
   ];
   var OPEN_ANGLE = 113; // 開いたデザインの扉の角度(度)
   // 開いたデザインの5枚の扉(板の大きさで回したもの)から求めた、写真を撮ったカメラ(目の位置と距離。写真の px)
@@ -1527,6 +1532,6 @@
   });
 })();
 </script>
-<script src="works-dial.js?v=44"></script>
+<script src="works-dial.js?v=45"></script>
 </body>
 </html>
