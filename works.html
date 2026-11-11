@@ -360,8 +360,8 @@
     background: linear-gradient(rgba(90, 50, 30, 0.08), rgba(90, 50, 30, 0) 6%, rgba(90, 50, 30, 0) 94%, rgba(90, 50, 30, 0.08));
   }
   .case-overlay.is-closing .case { transition: opacity 0.16s ease; } /* 閉じるときだけ、本文とタブをすっと消す */
-  /* ページが出るとき(遊び心): 帯が出て、タブが #01 から順に下からピョコッと飛び出し、
-     「CASE 0X」とタイトルがハンコのように「トン」と押され、線がスーッと伸びてから、コピーと本文が出る */
+  /* ページが出るとき: 帯が出て、タブが #01 から順に上からピョコッと落ちてきて、
+     ファーストビュー(タイトルまわりと Product・Timeline)は About の写真と同じ「現像」のように浮かび上がる */
   .case-overlay.is-entering .case { background: transparent; }
   .case-overlay.is-entering .case-tabs { animation: case-fade 0.25s ease-out both; }
   .case-overlay.is-entering .case-tab { animation: tab-pop 0.5s cubic-bezier(0.3, 1.7, 0.5, 1) both; }
@@ -370,20 +370,15 @@
   .case-overlay.is-entering .case-tab[data-tab="03"] { animation-delay: 0.17s; }
   .case-overlay.is-entering .case-tab[data-tab="04"] { animation-delay: 0.23s; }
   .case-overlay.is-entering .case-tab[data-tab="05"] { animation-delay: 0.29s; }
-  .case-overlay.is-entering .case-title { animation: case-stamp 0.5s cubic-bezier(0.2, 0.9, 0.3, 1) 0.3s both; }
-  .case-overlay.is-entering .case-sub .case-line { transform-origin: 50% 0; animation: line-grow 0.4s cubic-bezier(0.3, 0, 0.2, 1) 0.72s both; }
-  .case-overlay.is-entering .case-sub p { animation: case-in 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) 1s both; }
-  .case-overlay.is-entering .case-meta,
+  .case-overlay.is-entering .case-top { animation: case-develop 2s ease 0.25s both; }
+  .case-overlay.is-entering .case-meta { animation: case-develop 2s ease 0.55s both; }
   .case-overlay.is-entering .case-list,
-  .case-overlay.is-entering .case-back { animation: case-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) 1.1s both; }
-  @keyframes tab-pop { from { transform: translateY(100%); } to { transform: none; } }
-  @keyframes case-stamp { /* ハンコ: 大きく傾いた状態から押しつけ、少しへこんで戻る */
-    0% { opacity: 0; transform: scale(1.6) rotate(-7deg); }
-    55% { opacity: 1; transform: scale(0.95) rotate(1deg); }
-    75% { transform: scale(1.02) rotate(-0.5deg); }
-    100% { opacity: 1; transform: none; }
+  .case-overlay.is-entering .case-back { animation: case-fade 0.6s ease 1.2s both; } /* ファーストビューより下(スクロールで見える) */
+  @keyframes tab-pop { from { transform: translateY(-120%); } to { transform: none; } } /* 上から落ちてきて弾む */
+  @keyframes case-develop { /* About の写真の「現像」と同じ: 白っぽくぼやけたセピアから、くっきりした色へ */
+    from { opacity: 0; filter: brightness(1.9) contrast(0.35) sepia(0.5) blur(4px); }
+    to { opacity: 1; filter: none; }
   }
-  @keyframes line-grow { from { transform: scaleY(0); } to { transform: none; } }
   .case-overlay.is-switching .case-content,
   .case-overlay.is-switching .case-back { animation: case-in 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) both; } /* 切り替えのときタブは動かさない */
   /* タブで切り替えるとき: 今の本文がすっと消え、地の色が変わり、新しい本文が出る(タブはそのまま) */
@@ -520,9 +515,8 @@
   .case-back-btn:focus-visible, .case-meta a:focus-visible { outline: 2px solid #000; outline-offset: 4px; }
   @media (prefers-reduced-motion: reduce) {
     .case-overlay, .case-overlay .case { transition: none; }
-    .case-overlay.is-entering .case-tabs, .case-overlay.is-entering .case-tab, .case-overlay.is-entering .case-title,
-    .case-overlay.is-entering .case-sub .case-line, .case-overlay.is-entering .case-sub p, .case-overlay.is-entering .case-meta,
-    .case-overlay.is-entering .case-list, .case-overlay.is-entering .case-back,
+    .case-overlay.is-entering .case-tabs, .case-overlay.is-entering .case-tab, .case-overlay.is-entering .case-top,
+    .case-overlay.is-entering .case-meta, .case-overlay.is-entering .case-list, .case-overlay.is-entering .case-back,
     .case-overlay.is-switching .case-content, .case-overlay.is-switching .case-back { animation: none; }
   }
   .dial-status {
@@ -1026,8 +1020,7 @@
         var fade = caseSheet.animate ? caseSheet.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, easing: "ease-out", fill: "forwards" }) : null;
         if (fade) sheetAnims.push(fade);
         setTimeout(function () { endSheet(); }, 320);
-        setTimeout(function () { knock(260, 0.55, 0.08); }, 560); // ハンコの「トン」
-        caseTimer = setTimeout(function () { caseOverlay.classList.remove("is-entering"); }, 1700);
+        caseTimer = setTimeout(function () { caseOverlay.classList.remove("is-entering"); }, 2700);
       });
     } else {
       frame.classList.add("case-covered");
