@@ -998,7 +998,7 @@
         caseOverlay.classList.remove("is-paper");
         caseOverlay.classList.add("show", "is-entering");
         frame.classList.add("case-covered");
-        requestAnimationFrame(endSheet);
+        requestAnimationFrame(function () { endSheet(); }); // 引数(時刻)を渡さない(keepShown と取り違えて手紙が残ってしまう)
         caseTimer = setTimeout(function () { caseOverlay.classList.remove("is-entering"); }, 450);
       });
     } else {
@@ -1015,7 +1015,7 @@
   function switchCase(id, byKey) {
     var target = caseOverlay.querySelector('.case[data-case="' + id + '"]');
     if (!target || switching) return;
-    caseFromBox = lockerFor(id);
+    // 手紙は、タブで切り替えても最初に取り出した私書箱へ戻す(その扉を閉めるため)
     try { history.replaceState({ caseId: id }, ""); } catch (err) {}
     function swap() {
       caseOverlay.querySelectorAll(".case").forEach(function (c) { c.classList.toggle("show", c === target); });
