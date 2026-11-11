@@ -326,6 +326,25 @@
   /* 開く・閉じるとき: まず「そのケースの色の紙」だけが私書箱から枠いっぱいに広がり(JS が clip-path を動かす)、
      広がりきってからタブと本文が出る。閉じるときは逆に、本文とタブが消えてから紙が私書箱へ戻る */
   .case-overlay.is-paper .case { opacity: 0; }
+  /* 開く・閉じるときに飛ぶ手紙。店内の枠と同じ大きさで、JS(Web Animations)が私書箱 ⇄ 枠いっぱいへ動かす。
+     三つ折りの折り目(.case-sheet-crease)は、折りたたまれている間だけ見える */
+  .case-sheet {
+    position: fixed;
+    z-index: 21;
+    pointer-events: none;
+    background: var(--sheet-bg, #f2eee3);
+    box-shadow: 0 10px 28px rgba(80, 30, 15, 0.28);
+    visibility: hidden;
+    will-change: transform;
+  }
+  .case-sheet.show { visibility: visible; }
+  .case-sheet-crease {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(rgba(0, 0, 0, 0) calc(33.33% - 1px), rgba(90, 50, 30, 0.22) 33.33%, rgba(255, 255, 255, 0.5) calc(33.33% + 1px), rgba(0, 0, 0, 0) calc(33.33% + 3px)),
+      linear-gradient(rgba(0, 0, 0, 0) calc(66.66% - 1px), rgba(90, 50, 30, 0.22) 66.66%, rgba(255, 255, 255, 0.5) calc(66.66% + 1px), rgba(0, 0, 0, 0) calc(66.66% + 3px));
+  }
   .case-overlay.is-closing .case { transition: opacity 0.16s ease; } /* 閉じるときだけ、本文とタブをすっと消す */
   .case-overlay.is-entering .case-tabs { animation: case-fade 0.3s ease-out both; }
   .case-overlay.is-entering .case-content,
@@ -757,6 +776,26 @@
     } catch (err) {}
   }
 
+  // 紙がこすれる「シャッ」(手紙を取り出す・しまうとき)
+  function rustle(volume, len, freq) {
+    try {
+      if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+      if (actx.state === "suspended") actx.resume();
+      var n = Math.floor(actx.sampleRate * len), buf = actx.createBuffer(1, n, actx.sampleRate), d = buf.getChannelData(0);
+      for (var i = 0; i < n; i++) {
+        var t = i / n, env = Math.sin(Math.PI * Math.min(1, t * 1.6)) * (1 - t);
+        d[i] = (Math.random() * 2 - 1) * env * (0.6 + 0.4 * Math.random());
+      }
+      var src = actx.createBufferSource(), f = actx.createBiquadFilter(), g = actx.createGain();
+      src.buffer = buf;
+      f.type = "highpass";
+      f.frequency.value = freq || 1800;
+      g.gain.value = volume;
+      src.connect(f); f.connect(g); g.connect(actx.destination);
+      src.start();
+    } catch (err) {}
+  }
+
   // サービスベルの「チーン」。少しずらした高い音を重ねて、金属らしい響き(うなり)と余韻を出す
   function ding() {
     try {
@@ -787,9 +826,10 @@
   }
 
   // ---------- ケーススタディ ----------
-  var caseOverlay = null, caseFrom = null;
+  var caseOverlay = null, caseFrom = null, caseSheet = null;
   function fitCase() { // 店内の枠とまったく同じ位置・大きさに重ね、デザインの幅 402px を枠の幅に合わせる
     if (!caseOverlay) return;
+    if (caseSheet && caseSheet.classList.contains("show")) placeSheet();
     // CSS の中央寄せ(translate)だと、画面の高さが奇数のとき店内の枠と 0.5px ずれて、
     // 後ろの店内の天井が上の端に細い線になって見える。枠の実際の位置をそのまま使う
     var fr = frame.getBoundingClientRect();
@@ -826,6 +866,10 @@
       });
     });
     document.body.appendChild(caseOverlay);
+    caseSheet = document.createElement("div");
+    caseSheet.className = "case-sheet";
+    caseSheet.innerHTML = '<span class="case-sheet-crease"></span>';
+    document.body.appendChild(caseSheet);
     window.addEventListener("resize", fitCase);
     window.addEventListener("keydown", function (e) {
       if (e.key === "Escape" && caseOverlay.classList.contains("show")) closeCase();
@@ -852,6 +896,41 @@
       { duration: ms, easing: easing, fill: "forwards" });
     clipAnim.onfinish = function () { done(); };
   }
+  // 手紙を飛ばす。枠(店内の枠と同じ位置・大きさ)を基準に、私書箱の位置・大きさへの変形を計算する
+  var sheetAnim = null, creaseAnim = null;
+  function placeSheet() {
+    var r = caseOverlay.getBoundingClientRect();
+    caseSheet.style.left = r.left + "px";
+    caseSheet.style.top = r.top + "px";
+    caseSheet.style.width = r.width + "px";
+    caseSheet.style.height = r.height + "px";
+    caseSheet.style.setProperty("--sheet-bg", getComputedStyle(caseOverlay).getPropertyValue("--overlay-bg"));
+    return r;
+  }
+  function boxTransform(el, r, rot) {
+    var b = el.getBoundingClientRect();
+    var dx = (b.left + b.width / 2) - (r.left + r.width / 2), dy = (b.top + b.height / 2) - (r.top + r.height / 2);
+    return "translate(" + dx.toFixed(1) + "px," + dy.toFixed(1) + "px) scale(" + (b.width / r.width).toFixed(4) + "," + (b.height / r.height).toFixed(4) + ") rotate(" + rot + "deg)";
+  }
+  function liftTransform(el, r, rot) { // 私書箱と真ん中の間で、少し上に持ち上げた位置(三つ折りのまま)
+    var b = el.getBoundingClientRect();
+    var dx = ((b.left + b.width / 2) - (r.left + r.width / 2)) * 0.45, dy = ((b.top + b.height / 2) - (r.top + r.height / 2)) * 0.45 - r.height * 0.08;
+    return "translate(" + dx.toFixed(1) + "px," + dy.toFixed(1) + "px) scale(0.5,0.18) rotate(" + rot + "deg)";
+  }
+  function flySheet(frames, creases, ms, done) {
+    if (sheetAnim) sheetAnim.cancel();
+    if (creaseAnim) creaseAnim.cancel();
+    caseSheet.classList.add("show");
+    if (!caseSheet.animate) { caseSheet.classList.remove("show"); done(); return; }
+    sheetAnim = caseSheet.animate(frames, { duration: ms, fill: "forwards" });
+    creaseAnim = caseSheet.firstChild.animate(creases, { duration: ms, fill: "forwards" });
+    sheetAnim.onfinish = function () { done(); };
+  }
+  function endSheet() {
+    caseSheet.classList.remove("show");
+    if (sheetAnim) { sheetAnim.cancel(); sheetAnim = null; }
+    if (creaseAnim) { creaseAnim.cancel(); creaseAnim = null; }
+  }
   function openCase(id, fromEl) {
     if (!caseOverlay) return false;
     var target = caseOverlay.querySelector('.case[data-case="' + id + '"]');
@@ -866,19 +945,30 @@
     caseOverlay.scrollTop = 0;
     caseFromBox = fromEl || null;
     if (fromEl && !reduceMotion) {
-      // 紙だけが箱の大きさから枠いっぱいに広がり、広がりきってからタブと本文が出る
-      caseOverlay.classList.add("is-paper", "show");
-      clipTo(boxInset(fromEl), "inset(0px 0px 0px 0px)", CASE_MS, "cubic-bezier(0.22, 1, 0.36, 1)", function () {
-        if (clipAnim) { clipAnim.cancel(); clipAnim = null; }
-        frame.classList.add("case-covered");
+      // 折りたたまれた手紙が私書箱から飛び出して持ち上がり、真ん中で三つ折りを開いて(少し弾んで)枠いっぱいになる。
+      // 開ききってからタブと本文が出る
+      var r = placeSheet();
+      rustle(0.22, 0.28, 2200);
+      setTimeout(function () { rustle(0.16, 0.22, 1500); }, 520); // 広げる音
+      flySheet([
+        { transform: boxTransform(fromEl, r, -12), offset: 0, easing: "cubic-bezier(0.2, 0.7, 0.3, 1)" },
+        { transform: liftTransform(fromEl, r, 9), offset: 0.38, easing: "cubic-bezier(0.4, 0, 0.3, 1)" },
+        { transform: "translate(0,0) scale(0.92,0.34) rotate(-3deg)", offset: 0.6, easing: "cubic-bezier(0.3, 0, 0.3, 1.5)" },
+        { transform: "translate(0,0) scale(1.03,1.04) rotate(0.6deg)", offset: 0.86, easing: "ease-out" },
+        { transform: "none", offset: 1 }
+      ], [
+        { opacity: 1, offset: 0 }, { opacity: 1, offset: 0.62 }, { opacity: 0, offset: 0.86 }, { opacity: 0, offset: 1 }
+      ], 1000, function () {
         caseOverlay.classList.remove("is-paper");
-        caseOverlay.classList.add("is-entering");
+        caseOverlay.classList.add("show", "is-entering");
+        frame.classList.add("case-covered");
+        requestAnimationFrame(endSheet);
         caseTimer = setTimeout(function () { caseOverlay.classList.remove("is-entering"); }, 450);
       });
     } else {
       frame.classList.add("case-covered");
+      caseOverlay.classList.add("show");
     }
-    caseOverlay.classList.add("show");
     caseFrom = document.activeElement;
     caseOverlay.focus({ preventScroll: true });
     try { history.pushState({ caseId: id }, ""); } catch (err) {}
@@ -925,15 +1015,30 @@
     function done() {
       caseOverlay.classList.remove("show", "is-paper", "is-entering", "is-leaving", "is-closing");
       if (clipAnim) { clipAnim.cancel(); clipAnim = null; }
+      endSheet();
     }
     if (caseFromBox && !reduceMotion) {
-      // 閉じるときは、本文とタブを消してから、紙だけが元の私書箱の中へ縮んで戻る
+      // 閉じるときは、本文とタブを消してから、手紙を三つ折りにたたんで、くるっと私書箱へ飛んで戻る
       clearTimeout(caseTimer);
       caseOverlay.classList.remove("is-entering");
       caseOverlay.classList.add("is-closing", "is-paper");
-      var to = boxInset(caseFromBox);
+      var box = caseFromBox;
       caseTimer = setTimeout(function () {
-        clipTo("inset(0px 0px 0px 0px)", to, 400, "cubic-bezier(0.55, 0, 0.75, 0.2)", done);
+        var r = placeSheet();
+        caseOverlay.classList.remove("show");
+        rustle(0.18, 0.24, 1600);
+        flySheet([
+          { transform: "none", offset: 0, easing: "cubic-bezier(0.5, 0, 0.6, 1)" },
+          { transform: "translate(0,0) scale(0.92,0.34) rotate(3deg)", offset: 0.36, easing: "cubic-bezier(0.3, 0, 0.4, 1)" },
+          { transform: liftTransform(box, r, -9), offset: 0.66, easing: "cubic-bezier(0.55, 0, 0.8, 0.3)" },
+          { transform: boxTransform(box, r, 12), offset: 1 }
+        ], [
+          { opacity: 0, offset: 0 }, { opacity: 1, offset: 0.36 }, { opacity: 1, offset: 1 }
+        ], 820, function () {
+          knock(420, 0.5, 0.07); // 私書箱に入った「コトン」
+          endSheet();
+          done();
+        });
       }, 160);
     } else {
       done();
