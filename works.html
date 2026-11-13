@@ -332,12 +332,13 @@
     position: fixed;
     z-index: 21;
     pointer-events: none;
-    visibility: hidden;
+    /* 飛んでいない間は display: none で立体の層ごと片づける(Mac の Safari で、残った層のせいで
+       ページ全体が描かれなくなることがあったため。will-change も付けない) */
+    display: none;
     perspective: 1600px; /* 折り返しのパネルを立体的に見せる */
     filter: drop-shadow(0 12px 16px rgba(80, 30, 15, 0.28));
-    will-change: transform;
   }
-  .case-sheet.show { visibility: visible; }
+  .case-sheet.show { display: block; }
   /* 三つ折りの手紙: 真ん中のパネルに、上と下のパネルが折り目(蝶番)で折り重なる。
      下を先に折り上げ、上をその上にかぶせる(本物の手紙と同じ)。折れている面は、傾くほど影が濃くなる */
   .case-sheet-panel {
@@ -995,7 +996,10 @@
       var w = panel.querySelector(".case-sheet-print");
       // ケースの写しは zoom がかかっているので、余白ではなく外側の箱で位置をずらす
       var shift = document.createElement("div");
-      shift.style.cssText = "position:absolute;left:0;width:100%;top:" + (-panel.offsetTop - st) + "px";
+      // 手紙はまだ display: none のことがあるので、パネルの位置は高さの割合から求める
+      var H = parseFloat(caseSheet.style.height) || 0;
+      var top = panel.classList.contains("mid") ? H * 0.333 : panel.classList.contains("bot") ? H * 0.666 : 0;
+      shift.style.cssText = "position:absolute;left:0;width:100%;top:" + (-top - st) + "px";
       shift.appendChild(c.cloneNode(true));
       w.innerHTML = "";
       w.appendChild(shift); // パネルの位置に当たる部分だけが見える
@@ -1548,6 +1552,6 @@
   });
 })();
 </script>
-<script src="works-dial.js?v=51"></script>
+<script src="works-dial.js?v=52"></script>
 </body>
 </html>
