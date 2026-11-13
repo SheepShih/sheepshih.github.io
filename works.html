@@ -352,7 +352,8 @@
   }
   /* 手紙の内側には、ケースのページの中身が刷ってある(開くときはまだ現像前のうすい状態)。
      外側(折りたたんだときに見える面)は無地。上下のパネルは、真横を過ぎて内側が見える間だけ中身を出す */
-  .case-sheet-print { position: absolute; left: 0; width: 100%; pointer-events: none; }
+  /* 刷る範囲はパネルの大きさだけ(ページ全体を写すと、Safari で大きすぎる層になり画面が真っ白になることがある) */
+  .case-sheet-print { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
   .case-sheet-print .case { background: transparent; }
   .case-sheet-print .case-tabs { visibility: hidden; }
   .case-sheet-print.undeveloped { opacity: 0.45; filter: brightness(1.9) contrast(0.35) sepia(0.5) blur(4px); }
@@ -978,9 +979,13 @@
     sheetAnims[0].onfinish = function () { done(); };
   }
   function endSheet(keepShown) {
-    if (!keepShown) caseSheet.classList.remove("show");
     sheetAnims.forEach(function (a) { a.cancel(); });
     sheetAnims = [];
+    if (!keepShown) {
+      caseSheet.classList.remove("show");
+      // 手紙に刷ったページの写しは、使い終わったらすぐ消す(重い写しを残さない)
+      caseSheet.querySelectorAll(".case-sheet-print").forEach(function (w) { w.innerHTML = ""; });
+    }
   }
   // 手紙の内側に、いま見えているケースのページを刷る(パネルごとに、その 1/3 の位置)
   function printSheet(developed) {
@@ -988,9 +993,12 @@
     if (!c) return;
     caseSheet.querySelectorAll(".case-sheet-panel").forEach(function (panel) {
       var w = panel.querySelector(".case-sheet-print");
+      // ケースの写しは zoom がかかっているので、余白ではなく外側の箱で位置をずらす
+      var shift = document.createElement("div");
+      shift.style.cssText = "position:absolute;left:0;width:100%;top:" + (-panel.offsetTop - st) + "px";
+      shift.appendChild(c.cloneNode(true));
       w.innerHTML = "";
-      w.appendChild(c.cloneNode(true));
-      w.style.top = (-panel.offsetTop - st) + "px";
+      w.appendChild(shift); // パネルの位置に当たる部分だけが見える
       w.classList.toggle("undeveloped", !developed);
     });
   }
@@ -1101,6 +1109,7 @@
     return el;
   }
   function hideCase() {
+    closingCase = false;
     frame.classList.remove("case-covered"); // 縮んで戻る間は店内が見えるように
     function done() {
       caseOverlay.classList.remove("show", "is-paper", "is-entering", "is-leaving", "is-closing");
@@ -1155,9 +1164,14 @@
     }
     if (caseFrom && caseFrom.focus) caseFrom.focus({ preventScroll: true });
   }
+  var closingCase = false;
   function closeCase() {
-    if (history.state && history.state.caseId) history.back(); // popstate で閉じる
-    else hideCase();
+    if (closingCase || !caseOverlay.classList.contains("show")) return; // 二度押しで、さらに前のページへ戻らないように
+    closingCase = true;
+    if (history.state && history.state.caseId) {
+      history.back(); // popstate で閉じる
+      setTimeout(function () { if (closingCase && caseOverlay.classList.contains("show")) hideCase(); }, 700); // popstate が来ないときの保険
+    } else hideCase();
   }
 
   function buildLockers() {
@@ -1534,6 +1548,6 @@
   });
 })();
 </script>
-<script src="works-dial.js?v=48"></script>
+<script src="works-dial.js?v=49"></script>
 </body>
 </html>
