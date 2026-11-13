@@ -486,7 +486,7 @@
   .case-list { display: flex; flex-direction: column; gap: 72px; }
   /* CASE 05: 担当外の仕事を番号つきで並べる(番号の下に Product / Theme / Press Release) */
   .case-list.case-proj-list { gap: 120px; }
-  .case-proj { display: flex; flex-direction: column; gap: 24px; }
+  .case-proj { display: flex; flex-direction: column; gap: 8px; }
   .case .case-proj-no { font: italic 700 24px/1 var(--case-serif); } /* .case p のリセット(大きさ・太さを親から受け継ぐ)より強くする */
   .case-meta dd .case-meta-ja { font-family: var(--case-mincho); font-weight: 700; }
   .case-table-title {
@@ -513,6 +513,8 @@
     text-align: center;
     white-space: nowrap;
   }
+  /* 見出しが長いとき: 下線を枠いっぱいに伸ばし、折り返しも許す(CASE 03 の 01.) */
+  .case .case-step h3.case-step-wide { align-self: stretch; white-space: normal; }
   .case-step h3 span { display: block; font-family: var(--case-serif); font-weight: 700; }
   .case-step > p, .case-step > ul { align-self: stretch; }
   /* 本文が複数の段落に分かれているとき: 段落の間は空行ひとつ(23px)。flex の gap(16px)と二重にしない */
@@ -1532,6 +1534,6 @@
   });
 })();
 </script>
-<script src="works-dial.js?v=47"></script>
+<script src="works-dial.js?v=48"></script>
 </body>
 </html>
