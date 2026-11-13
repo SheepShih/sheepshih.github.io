@@ -487,7 +487,7 @@
   /* CASE 05: 担当外の仕事を番号つきで並べる(番号の下に Product / Theme / Press Release) */
   .case-list.case-proj-list { gap: 120px; }
   .case-proj { display: flex; flex-direction: column; gap: 24px; }
-  .case-proj-no { font: italic 700 24px/1 var(--case-serif); }
+  .case .case-proj-no { font: italic 700 24px/1 var(--case-serif); } /* .case p のリセット(大きさ・太さを親から受け継ぐ)より強くする */
   .case-meta dd .case-meta-ja { font-family: var(--case-mincho); font-weight: 700; }
   .case-table-title {
     display: flex;
@@ -1532,6 +1532,6 @@
   });
 })();
 </script>
-<script src="works-dial.js?v=46"></script>
+<script src="works-dial.js?v=47"></script>
 </body>
 </html>
